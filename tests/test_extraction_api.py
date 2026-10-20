@@ -5,14 +5,18 @@ only at the app seam here; evidence-validator tests and the disclosed live run
 are separate. TemporaryDirectory keeps all test records away from user uploads.
 """
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 import inspect
 import hashlib
+import json
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -226,3 +230,273 @@ class ExtractionApiTests(unittest.TestCase):
         (self.data / "sets" / uploaded["upload_id"] / "customer_spec.pdf").write_bytes(b"changed test data")
         self.assertEqual(self.wait(self.start(uploaded))["status"], "failed")
         self.assertEqual(len(list((self.data / "sets").iterdir())), 1)
+
+    def test_idempotent_simultaneous_retries_share_one_running_worker(self):
+        uploaded = self.upload()
+        key = "1" * 32
+        release = threading.Event()
+        started = threading.Event()
+        calls = []
+        self.addCleanup(release.set)
+
+        def blocked(documents):
+            calls.append(1)
+            started.set()
+            release.wait(3)
+            return unavailable(documents)
+
+        self.app.state.extract_upload = blocked
+        url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(self.client.post, url, headers={"Idempotency-Key": key}) for _ in range(2)]
+            responses = [future.result(timeout=3) for future in futures]
+        self.assertTrue(started.wait(1))
+        self.assertEqual([response.status_code for response in responses], [202, 202])
+        self.assertEqual({response.json()["status"] for response in responses}, {"running"})
+        self.assertEqual(len({response.json()["job_id"] for response in responses}), 1)
+        self.assertEqual(len(calls), 1)
+        job_id = responses[0].json()["job_id"]
+        mapping = json.loads((self.data / "extraction_requests" / f"{key}.json").read_text())
+        self.assertEqual(mapping, {"upload_id": uploaded["upload_id"], "job_id": job_id})
+        self.assertEqual(len(list((self.data / "extractions").glob("*.json"))), 1)
+        release.set()
+        self.assertEqual(self.wait(job_id)["status"], "completed")
+
+    def test_idempotent_completed_retry_returns_same_snapshot_without_worker(self):
+        uploaded = self.upload()
+        key = "2" * 32
+        calls = []
+
+        def counted(documents):
+            calls.append(1)
+            return unavailable(documents)
+
+        self.app.state.extract_upload = counted
+        url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+        first = self.client.post(url, headers={"Idempotency-Key": key})
+        self.assertEqual(first.status_code, 202)
+        completed = self.wait(first.json()["job_id"])
+        before = {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()}
+        for _ in range(2):
+            repeated = self.client.post(url, headers={"Idempotency-Key": key})
+            self.assertEqual(repeated.status_code, 202)
+            self.assertEqual(repeated.json(), completed)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(before, {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()})
+
+    def test_idempotent_failed_retry_does_not_restart_worker(self):
+        uploaded = self.upload()
+        key = "3" * 32
+        calls = []
+
+        def failure(documents):
+            calls.append(1)
+            raise ValueError("Synthetic extraction failure")
+
+        self.app.state.extract_upload = failure
+        url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+        first = self.client.post(url, headers={"Idempotency-Key": key})
+        self.assertEqual(first.status_code, 202)
+        failed = self.wait(first.json()["job_id"])
+        self.assertEqual(failed["status"], "failed")
+        repeated = self.client.post(url, headers={"Idempotency-Key": key})
+        self.assertEqual(repeated.status_code, 202)
+        self.assertEqual(repeated.json(), failed)
+        self.assertEqual(len(calls), 1)
+        self.assertFalse(self.app.state.ai_gate.locked())
+        self.app.state.extract_upload = unavailable
+        fresh = self.client.post(url, headers={"Idempotency-Key": "4" * 32})
+        self.assertEqual(fresh.status_code, 202)
+        self.assertNotEqual(fresh.json()["job_id"], failed["job_id"])
+        self.assertEqual(self.wait(fresh.json()["job_id"])["status"], "completed")
+
+    def test_idempotency_key_cannot_be_reused_for_a_different_upload(self):
+        first_upload = self.upload()
+        second_upload = self.upload()
+        key = "5" * 32
+        first = self.client.post(f"/api/uploads/{first_upload['upload_id']}/extractions",
+                                 headers={"Idempotency-Key": key})
+        self.assertEqual(first.status_code, 202)
+        self.wait(first.json()["job_id"])
+        before = {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()}
+        repeated = self.client.post(f"/api/uploads/{second_upload['upload_id']}/extractions",
+                                    headers={"Idempotency-Key": key})
+        self.assertEqual(repeated.status_code, 409)
+        self.assertEqual(before, {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()})
+
+    def test_idempotent_retry_after_app_restart_marks_running_job_failed(self):
+        uploaded = self.upload()
+        key, job_id = "6" * 32, "7" * 32
+        write_json(self.data / "extractions" / f"{job_id}.json", {"job_id": job_id, "status": "running"})
+        write_json(self.data / "extraction_requests" / f"{key}.json",
+                   {"upload_id": uploaded["upload_id"], "job_id": job_id})
+        restarted = create_app(self.data)
+        calls = []
+        restarted.state.extract_upload = lambda documents: calls.append(documents)
+        with TestClient(restarted) as client:
+            url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+            response = client.post(url, headers={"Idempotency-Key": key})
+            self.assertEqual(response.status_code, 202)
+            self.assertEqual(response.json()["job_id"], job_id)
+            self.assertEqual(response.json()["status"], "failed")
+            self.assertIn("재시작", response.json()["error"])
+            self.assertEqual(client.get(f"/api/extractions/{job_id}").json(), response.json())
+            self.assertEqual(client.post(url, headers={"Idempotency-Key": key}).json(), response.json())
+        self.assertEqual(calls, [])
+        self.assertFalse(restarted.state.ai_gate.locked())
+        self.assertEqual(len(list((self.data / "sets").iterdir())), 1)
+
+    def test_invalid_idempotency_keys_are_rejected_without_side_effects(self):
+        uploaded = self.upload()
+        url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+        headers = [{"Idempotency-Key": value} for value in ("", "A" * 32, "a" * 31, "a" * 33, "g" * 32, "../bad")]
+        headers.append([("Idempotency-Key", "a" * 32), ("Idempotency-Key", "b" * 32)])
+        for value in headers:
+            with self.subTest(headers=value):
+                response = self.client.post(url, headers=value)
+                self.assertEqual(response.status_code, 422, response.text)
+        self.assertFalse((self.data / "extractions").exists())
+        self.assertFalse((self.data / "extraction_requests").exists())
+        self.assertFalse(self.app.state.ai_gate.locked())
+        self.assertEqual(self.app.state.extraction_tasks, {})
+
+    def test_customer_hold_precedes_idempotency_and_creates_no_records(self):
+        uploaded = self.upload(case="C01")
+        self.assertFalse(uploaded["customer_check"]["can_compare"])
+        before = {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()}
+        for key in ("8" * 32, "invalid"):
+            response = self.client.post(f"/api/uploads/{uploaded['upload_id']}/extractions",
+                                        headers={"Idempotency-Key": key})
+            self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(before, {str(p.relative_to(self.data)): p.read_bytes() for p in self.data.rglob("*") if p.is_file()})
+        self.assertFalse((self.data / "extractions").exists())
+        self.assertFalse((self.data / "extraction_requests").exists())
+        self.assertFalse(self.app.state.ai_gate.locked())
+        self.assertEqual(self.app.state.extraction_tasks, {})
+
+    def test_idempotency_mapping_write_failure_cleans_new_job_and_releases_gate(self):
+        uploaded = self.upload()
+        key = "9" * 32
+        calls = []
+
+        def counted(documents):
+            calls.append(1)
+            return unavailable(documents)
+
+        def broken_mapping_write(path, value):
+            if path.parent.name == "extraction_requests":
+                raise OSError("Synthetic request-map write failure")
+            return write_json(path, value)
+
+        self.app.state.extract_upload = counted
+        url = f"/api/uploads/{uploaded['upload_id']}/extractions"
+        with patch("handoff_review.web_app.write_json", side_effect=broken_mapping_write):
+            with self.assertRaises(OSError):
+                self.client.post(url, headers={"Idempotency-Key": key})
+        self.assertEqual(calls, [])
+        self.assertEqual(list((self.data / "extractions").glob("*.json")), [])
+        self.assertFalse((self.data / "extraction_requests" / f"{key}.json").exists())
+        self.assertFalse(self.app.state.ai_gate.locked())
+        repeated = self.client.post(url, headers={"Idempotency-Key": key})
+        self.assertEqual(repeated.status_code, 202)
+        self.assertEqual(self.wait(repeated.json()["job_id"])["status"], "completed")
+        self.assertEqual(len(calls), 1)
+
+    def test_job_source_is_saved_input_across_running_completed_and_replay(self):
+        uploaded = self.upload()
+        original_id = uploaded["upload_id"]
+        release = threading.Event()
+        self.addCleanup(release.set)
+
+        def forged_result_provenance(documents):
+            release.wait(3)
+            result = unavailable(documents)
+            result["source_upload_id"] = "f" * 32
+            return result
+
+        self.app.state.extract_upload = forged_result_provenance
+        url = f"/api/uploads/{original_id}/extractions"
+        headers = {"Idempotency-Key": "a" * 32}
+        response = self.client.post(url, headers=headers)
+        self.assertEqual(response.status_code, 202)
+        running = response.json()
+        self.assertEqual(running["status"], "running")
+        self.assertEqual(running["source_upload_id"], original_id)
+        self.assertEqual(self.client.get(f"/api/extractions/{running['job_id']}").json()["source_upload_id"], original_id)
+        release.set()
+        completed = self.wait(running["job_id"])
+        self.assertEqual(completed["status"], "completed")
+        self.assertEqual(completed["source_upload_id"], original_id)
+        self.assertNotEqual(completed["upload"]["upload_id"], original_id)
+        self.assertEqual(self.client.post(url, headers=headers).json(), completed)
+        saved = json.loads((self.data / "extractions" / f"{running['job_id']}.json").read_text())
+        self.assertEqual(saved["source_upload_id"], original_id)
+
+    def test_failed_worker_keeps_original_source_upload(self):
+        uploaded = self.upload()
+        original_id = uploaded["upload_id"]
+
+        def failure(documents):
+            raise RuntimeError("Synthetic worker failure")
+
+        self.app.state.extract_upload = failure
+        job = self.wait(self.start(uploaded))
+        self.assertEqual(job["status"], "failed")
+        self.assertEqual(job["source_upload_id"], original_id)
+        self.assertEqual(self.client.get(f"/api/extractions/{job['job_id']}").json(), job)
+        self.assertFalse(self.app.state.ai_gate.locked())
+        self.assertEqual(self.client.get(f"/api/uploads/{original_id}").json(), uploaded)
+
+    def test_cancelled_worker_keeps_original_source_upload(self):
+        uploaded = self.upload()
+
+        def cancelled(documents):
+            raise asyncio.CancelledError()
+
+        self.app.state.extract_upload = cancelled
+        job = self.wait(self.start(uploaded))
+        self.assertEqual(job["status"], "failed")
+        self.assertEqual(job["source_upload_id"], uploaded["upload_id"])
+        self.assertIn("서버 종료", job["error"])
+        self.assertFalse(self.app.state.ai_gate.locked())
+
+    def test_restart_preserves_existing_job_source_without_restarting_worker(self):
+        uploaded = self.upload()
+        key, job_id = "b" * 32, "c" * 32
+        write_json(self.data / "extractions" / f"{job_id}.json",
+                   {"job_id": job_id, "source_upload_id": uploaded["upload_id"], "status": "running"})
+        write_json(self.data / "extraction_requests" / f"{key}.json",
+                   {"upload_id": uploaded["upload_id"], "job_id": job_id})
+        restarted = create_app(self.data)
+        calls = []
+        restarted.state.extract_upload = lambda documents: calls.append(documents)
+        with TestClient(restarted) as client:
+            response = client.post(f"/api/uploads/{uploaded['upload_id']}/extractions",
+                                   headers={"Idempotency-Key": key})
+            self.assertEqual(response.status_code, 202)
+            self.assertEqual(response.json()["status"], "failed")
+            self.assertEqual(response.json()["source_upload_id"], uploaded["upload_id"])
+            self.assertEqual(client.get(f"/api/extractions/{job_id}").json(), response.json())
+        self.assertEqual(calls, [])
+        saved = json.loads((self.data / "extractions" / f"{job_id}.json").read_text())
+        self.assertEqual(saved["source_upload_id"], uploaded["upload_id"])
+
+    def test_legacy_job_source_is_never_inferred_from_idempotency_mapping(self):
+        uploaded = self.upload()
+        calls = []
+        self.app.state.extract_upload = lambda documents: calls.append(documents)
+        for index, status in enumerate(("running", "completed", "failed"), 1):
+            with self.subTest(status=status):
+                key, job_id = f"{index + 100:032x}", f"{index + 200:032x}"
+                write_json(self.data / "extractions" / f"{job_id}.json",
+                           {"job_id": job_id, "status": status})
+                write_json(self.data / "extraction_requests" / f"{key}.json",
+                           {"upload_id": uploaded["upload_id"], "job_id": job_id})
+                response = self.client.post(f"/api/uploads/{uploaded['upload_id']}/extractions",
+                                            headers={"Idempotency-Key": key})
+                self.assertEqual(response.status_code, 202)
+                self.assertNotIn("source_upload_id", response.json())
+                self.assertNotIn("source_upload_id", self.client.get(f"/api/extractions/{job_id}").json())
+                saved = json.loads((self.data / "extractions" / f"{job_id}.json").read_text())
+                self.assertNotIn("source_upload_id", saved)
+        self.assertEqual(calls, [])

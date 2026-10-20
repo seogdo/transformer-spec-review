@@ -18,6 +18,8 @@
 
 ![팬 전원 불일치와 양쪽 원문 근거](output/live-browser-v01-result.png)
 
+[3분 발표 대본과 시연 순서](docs/presentation-demo.md)에는 실제 버튼 순서, 연결 실패 시 대체 진행 방법, 핵심 질의응답을 정리했습니다.
+
 ## 실행 방법
 
 Python 3.11 이상에서 다음 명령을 실행합니다. 아래 명령은 macOS·Linux 기준입니다.
@@ -32,7 +34,7 @@ python3 -m venv .venv-app
 
 브라우저에서 [http://127.0.0.1:8765](http://127.0.0.1:8765)를 엽니다.
 
-1. **D01 · 승인 변경 누락** 등 정형 PDF 예시를 선택합니다. 정형 경로는 AI 서버 없이 실행할 수 있습니다.
+1. **예시 01 · 변경 검토** 등 정형 PDF 예시를 선택합니다. 정형 경로는 AI 서버 없이 실행할 수 있습니다.
 2. 고객사 확인 결과와 적용할 변경 문서를 확인합니다.
 3. 기준 확인란을 체크하고 **10개 항목 검토하기**를 누릅니다.
 4. 불일치 항목의 원문을 확인하고 검토 기록을 내려받습니다.
@@ -55,6 +57,7 @@ AI는 정상 추출 경로에서 최대 2회 호출됩니다. 비교와 단위 �
 
 # 화면 코드의 모의 DOM 검사 — Node.js 필요
 node scripts/check_evidence_ui.cjs
+node scripts/check_recovery_ui.cjs
 
 # 구조화된 가상 개발 사례 평가
 PYTHONPATH=src .venv-app/bin/python scripts/evaluate_cases.py
@@ -63,6 +66,8 @@ PYTHONPATH=src .venv-app/bin/python scripts/evaluate_cases.py
 개발 환경에서 V01 가상 PDF 3개로 실제 AI 추출값 21개가 원문 대조를 통과했고, 9개 일치·1개 불일치를 확인했습니다. 원문 PDF 열기, JSON 내려받기, 새로고침 후 결과 복원도 확인했습니다. PDF 뷰어 다운로드 버튼의 완료 여부는 미확인입니다.
 
 자동 검사와 실제 모델 시험은 구분합니다. 가상 개발 사례의 성공을 실제 회사 문서 정확도나 독립 성능 평가로 해석하지 않습니다. [공개 사본의 구성 및 검증 안내](docs/publication.md)를 확인해 주세요.
+
+파일 오류·AI 연결 실패·접수 후 응답 오류의 [재시도 흐름](docs/error-recovery.md)도 확인했습니다. 같은 추출 요청은 기존 작업을 다시 조회하며, 실패한 값을 성공한 값으로 대신 채우지 않습니다.
 
 ## 지원 범위와 제한
 

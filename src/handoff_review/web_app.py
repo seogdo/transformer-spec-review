@@ -238,6 +238,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     app.state.extract_upload = extract_text_upload
     app.state.extraction_tasks = {}
     app.state.ai_gate = asyncio.Semaphore(1)
+    app.state.extraction_request_lock = asyncio.Lock()
     app.add_middleware(LocalRequestBoundary)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"])
 
@@ -255,6 +256,21 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
 
     def review_record(review_id: str) -> dict:
         return load_json(data / "reviews" / f"{checked_id(review_id)}.json")
+
+    def extraction_record(job_id: str) -> dict:
+        # Call only from the async routes, without awaiting between the read
+        # and live-task check. A completed job must not be marked interrupted.
+        path = data / "extractions" / f"{checked_id(job_id)}.json"
+        job = load_json(path)
+        if job["status"] == "running" and job_id not in app.state.extraction_tasks:
+            interrupted = {"job_id": job_id, "status": "failed", "error": "서버 재시작으로 추출 기록이 중단되었습니다. 다시 요청해 주세요."}
+            # Preserve known provenance; a legacy job must not acquire an
+            # inferred source from a request mapping or the current browser.
+            if "source_upload_id" in job:
+                interrupted["source_upload_id"] = job["source_upload_id"]
+            job = interrupted
+            write_json(path, job)
+        return job
 
     def metadata(record: dict) -> dict:
         return {"upload_id": record["upload_id"], "mode": record.get("mode", "template"),
@@ -388,20 +404,23 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                 destination = data / "sets" / upload_id
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 staging_path.rename(destination)
-            write_json(job_path, {"job_id": job_id, "status": "completed", "finished_at": now(),
+            write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
+                                  "status": "completed", "finished_at": now(),
                                   "message": "근거 추출을 마쳤습니다. 적용 기준과 확인 필요 항목을 검토해 주세요.",
                                   "upload": metadata(record), "extraction": report})
         except asyncio.CancelledError:
-            write_json(job_path, {"job_id": job_id, "status": "failed", "error": "서버 종료로 추출 작업이 중단되었습니다. 다시 요청해 주세요."})
+            write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
+                                  "status": "failed", "error": "서버 종료로 추출 작업이 중단되었습니다. 다시 요청해 주세요."})
             raise
         except Exception:
-            write_json(job_path, {"job_id": job_id, "status": "failed", "error": "추출 결과를 저장하지 못했습니다. 기존 문서는 유지됩니다. 다시 요청해 주세요."})
+            write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
+                                  "status": "failed", "error": "추출 결과를 저장하지 못했습니다. 기존 문서는 유지됩니다. 다시 요청해 주세요."})
         finally:
             app.state.extraction_tasks.pop(job_id, None)
             app.state.ai_gate.release()
 
     @app.post("/api/uploads/{upload_id}/extractions", status_code=202)
-    async def start_extraction(upload_id: str):
+    async def start_extraction(upload_id: str, request: Request):
         source = upload_record(upload_id)
         if source.get("mode") != "text_ai":
             raise HTTPException(422, "AI 텍스트 PDF 모드로 읽은 문서를 사용해 주세요.")
@@ -415,33 +434,53 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                 "고객사 확인이 통과되지 않아 AI 추출을 시작할 수 없습니다. "
                 "문서의 고객사 누락·미등록·상충·혼입 여부를 확인해 주세요.",
             )
-        if app.state.ai_gate.locked():
-            raise HTTPException(409, "다른 AI 작업이 진행 중입니다. 완료 후 다시 시도해 주세요.")
-        await app.state.ai_gate.acquire()
-        job_id = uuid4().hex
-        record = {"job_id": job_id, "status": "running", "created_at": now(),
-                  "message": "로컬 AI가 검색 계획을 세우고 근거에서 항목을 추출하고 있습니다."}
-        try:
-            write_json(data / "extractions" / f"{job_id}.json", record)
-            task = asyncio.create_task(process_extraction(job_id, source))
-            app.state.extraction_tasks[job_id] = task
-        except Exception:
-            app.state.ai_gate.release()
-            raise
-        return record
+        keys = request.headers.getlist("idempotency-key")
+        key = keys[0] if keys else None
+        if len(keys) > 1 or (key is not None and not re.fullmatch(r"[0-9a-f]{32}", key)):
+            raise HTTPException(422, "Idempotency-Key는 소문자 16진수 32자리여야 합니다.")
+        request_path = data / "extraction_requests" / f"{key}.json" if key is not None else None
+        # Serialize lookup and creation within this local single-process app.
+        # The mapping is durable before any model work can begin.
+        async with app.state.extraction_request_lock:
+            if request_path is not None and request_path.is_file():
+                previous = load_json(request_path)
+                if previous.get("upload_id") != upload_id:
+                    raise HTTPException(409, "이미 다른 문서에 사용한 추출 요청 번호입니다. 새 요청 번호를 사용해 주세요.")
+                return extraction_record(previous["job_id"])
+            if app.state.ai_gate.locked():
+                raise HTTPException(409, "다른 AI 작업이 진행 중입니다. 완료 후 다시 시도해 주세요.")
+            await app.state.ai_gate.acquire()
+            job_id = uuid4().hex
+            job_path = data / "extractions" / f"{job_id}.json"
+            record = {"job_id": job_id, "source_upload_id": source["upload_id"],
+                      "status": "running", "created_at": now(),
+                      "message": "로컬 AI가 검색 계획을 세우고 근거에서 항목을 추출하고 있습니다."}
+            try:
+                write_json(job_path, record)
+                if request_path is not None:
+                    write_json(request_path, {"upload_id": upload_id, "job_id": job_id})
+                worker = process_extraction(job_id, source)
+                try:
+                    task = asyncio.create_task(worker)
+                except Exception:
+                    worker.close()
+                    raise
+                app.state.extraction_tasks[job_id] = task
+            except Exception:
+                # No worker was started: remove only this attempt's new
+                # records, so a retry can safely reserve the same key.
+                try:
+                    if request_path is not None:
+                        request_path.unlink(missing_ok=True)
+                    job_path.unlink(missing_ok=True)
+                finally:
+                    app.state.ai_gate.release()
+                raise
+            return record
 
     @app.get("/api/extractions/{job_id}")
     async def extraction_job(job_id: str):
-        # No await between reading the record and checking the live task map:
-        # completion writes and task removal run on this same event loop. A
-        # threadpool GET could otherwise overwrite a just-completed job using
-        # a stale "running" record and incorrectly label it interrupted.
-        path = data / "extractions" / f"{checked_id(job_id)}.json"
-        job = load_json(path)
-        if job["status"] == "running" and job_id not in app.state.extraction_tasks:
-            job = {"job_id": job_id, "status": "failed", "error": "서버 재시작으로 추출 기록이 중단되었습니다. 다시 요청해 주세요."}
-            write_json(path, job)
-        return job
+        return extraction_record(job_id)
 
     @app.get("/api/uploads/{upload_id}/documents/{document_id}/pages/{page}")
     def page_text(upload_id: str, document_id: str, page: int):

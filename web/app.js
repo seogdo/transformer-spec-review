@@ -7,8 +7,8 @@ const CURRENT_FIELDS = Object.freeze({rated_power: "정격용량", hv_voltage: "
 const ROLES = {customer_spec: "고객 기술사양서", spec: "고객 기술사양서", amendment: "기술 변경 합의서", handoff: "내부 수주 인계표"};
 const FILE_FIELDS = {customer_spec: "spec_file", spec: "spec_file", spec_file: "spec_file", amendment: "amendment_file", amendment_file: "amendment_file", handoff: "handoff_file", handoff_file: "handoff_file"};
 const MAX_BYTES = 5 * 1024 * 1024;
-const STORAGE = {review: "handoff-review:review_id", upload: "handoff-review:upload_id", job: "handoff-review:job_id"};
-const state = {health: null, samples: [], upload: null, review: null, selected: null, filter: "all", busy: false, retry: null, explanations: new Map(), mode: "template", extraction: null, job: null, extracting: false};
+const STORAGE = {review: "handoff-review:review_id", upload: "handoff-review:upload_id", job: "handoff-review:job_id", extractionRequest: "handoff-review:extraction_request"};
+const state = {health: null, samples: [], upload: null, review: null, selected: null, filter: "all", busy: false, retry: null, explanations: new Map(), mode: "template", extraction: null, job: null, extractionRequest: null, extracting: false};
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -31,6 +31,69 @@ function safeUrl(value) {
 }
 function remember(key, value) { try { value ? localStorage.setItem(key, String(value)) : localStorage.removeItem(key); } catch (_) { /* Storage can be disabled; the current review remains usable. */ } }
 function recalled(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+function clearExtractionRequest() {
+  state.extractionRequest = null; remember(STORAGE.extractionRequest, null);
+}
+function clearStoredExtractionJob() {
+  state.job = null; remember(STORAGE.job, null);
+}
+function clearExtractionJob() {
+  clearStoredExtractionJob(); clearExtractionRequest();
+}
+function rememberExtractionJob(jobId, uploadId) {
+  state.job = jobId;
+  remember(STORAGE.job, JSON.stringify({upload_id: uploadId, job_id: jobId}));
+}
+function storedExtractionJob(raw, uploadId) {
+  if (!raw) return null;
+  let record;
+  try { record = JSON.parse(raw); } catch (_) { record = raw; }
+  // Legacy plain IDs may only be inspected: pollExtraction still requires
+  // the server's source_upload_id before it applies or renders that job.
+  if (typeof record === "string" && /^[a-f0-9]{32}$/.test(record)) return record;
+  return record && record.upload_id === uploadId
+    && typeof record.job_id === "string" && /^[a-f0-9]{32}$/.test(record.job_id) ? record.job_id : null;
+}
+function verifyExtractionSource(job, uploadId) {
+  if (job.source_upload_id !== uploadId) {
+    // Preserve a valid request key for the current upload: a stale job from
+    // another tab must not erase the current upload's deduplication identity.
+    clearStoredExtractionJob();
+    throw new Error("추출 작업의 원본 문서를 현재 문서와 대조할 수 없어 복원을 중단했습니다. 현재 문서는 변경하지 않았습니다. 원문을 확인한 뒤 같은 요청을 다시 확인하거나 문서를 다시 읽어 주세요. 새 요청은 자동으로 보내지 않습니다.");
+  }
+}
+function validExtractionRequest(request, uploadId) {
+  return Boolean(request && request.upload_id === uploadId
+    && typeof request.key === "string" && /^[a-f0-9]{32}$/.test(request.key));
+}
+function restoreExtractionRequest(uploadId) {
+  let request;
+  try { request = JSON.parse(recalled(STORAGE.extractionRequest)); } catch (_) { /* Invalid local state is not a request identity. */ }
+  if (validExtractionRequest(request, uploadId)) state.extractionRequest = {upload_id: uploadId, key: request.key};
+  else clearExtractionRequest();
+}
+function extractionRequestKey(uploadId) {
+  if (!validExtractionRequest(state.extractionRequest, uploadId)) {
+    if (typeof globalThis.crypto?.randomUUID !== "function") throw new Error("안전한 요청 식별자를 만들 수 없습니다. 최신 브라우저의 localhost 화면에서 다시 시도해 주세요.");
+    state.extractionRequest = {upload_id: uploadId, key: crypto.randomUUID().replaceAll("-", "")};
+    if (!validExtractionRequest(state.extractionRequest, uploadId)) {
+      clearExtractionRequest();
+      throw new Error("추출 요청 식별자를 만들지 못했습니다. 다시 시도해 주세요.");
+    }
+  }
+  // Persist before POST: an unreadable/lost response must not create a new
+  // identity on a manual retry. The record is bound to this exact input upload.
+  const serialized = JSON.stringify(state.extractionRequest);
+  try {
+    localStorage.setItem(STORAGE.upload, uploadId);
+    localStorage.setItem(STORAGE.extractionRequest, serialized);
+    if (localStorage.getItem(STORAGE.upload) !== uploadId
+        || localStorage.getItem(STORAGE.extractionRequest) !== serialized) throw new Error("Storage readback differs.");
+  } catch (_) {
+    throw new Error("추출 요청 복구 정보를 브라우저에 저장하고 확인할 수 없어 AI 요청을 보내지 않았습니다. 브라우저의 사이트 저장소 사용을 허용하고 저장 공간을 확인한 뒤 다시 시도해 주세요.");
+  }
+  return state.extractionRequest.key;
+}
 
 async function api(path, options = {}) {
   const controller = new AbortController();
@@ -43,13 +106,18 @@ async function api(path, options = {}) {
         const body = await response.json();
         detail = Array.isArray(body.detail) ? body.detail.map((row) => row.msg || textOf(row)).join(" / ") : textOf(body.detail || body.message || detail);
       } catch (_) { /* Keep the HTTP error when the response is not JSON. */ }
-      throw new Error(detail);
+      const error = new Error(detail); error.status = response.status;
+      throw error;
     }
     if (options.blob) return await response.blob();
     try { return await response.json(); } catch (_) { throw new Error("서버 응답을 읽을 수 없습니다. 다시 시도해 주세요."); }
   } catch (error) {
-    if (error.name === "AbortError") throw new Error("응답 대기 시간이 지났습니다. 서버 상태를 확인한 뒤 다시 시도해 주세요.");
-    if (error instanceof TypeError) throw new Error("서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해 주세요.");
+    if (error.name === "AbortError" || error instanceof TypeError) {
+      const failure = new Error(error.name === "AbortError"
+        ? "응답 대기 시간이 지났습니다. 서버 상태를 확인한 뒤 다시 시도해 주세요."
+        : "서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해 주세요.");
+      failure.status = 0; throw failure;
+    }
     throw error;
   } finally { clearTimeout(timer); }
 }
@@ -158,8 +226,8 @@ function renderMode() {
 }
 function resetInputState(message) {
   clearError();
-  state.upload = null; state.extraction = null; state.job = null; state.extracting = false;
-  remember(STORAGE.upload, null); remember(STORAGE.job, null); clearReviewState();
+  state.upload = null; state.extraction = null; state.extracting = false;
+  remember(STORAGE.upload, null); clearExtractionJob(); clearReviewState();
   $("policy-confirmed").checked = false; renderDocuments(); renderExtraction(); steps(1); controls();
   if (message) { setText("restore-note", message); $("restore-note").hidden = false; }
 }
@@ -221,13 +289,14 @@ function renderExtraction() {
   $("extraction-section").hidden = !visible;
   $("extract-button").hidden = !pending || customerHold;
   if (!visible) return;
-  setText("extract-button", state.extracting ? "AI 추출 진행 중…" : state.job ? "추출 진행 상태 다시 확인" : "AI로 근거 찾고 항목 추출");
+  setText("extract-button", state.extracting ? "AI 추출 진행 중…" : state.job ? "추출 진행 상태 다시 확인" : state.extractionRequest ? "같은 추출 요청 다시 확인" : "AI로 근거 찾고 항목 추출");
   let message = "문서 정보를 읽었습니다. AI 추출을 완료한 다음 승인 적용을 확인하세요.";
   if (customerHold) message = "고객사 확인이 통과되지 않아 AI 추출이 필요하지 않습니다. 고객사 확인 결과와 문서 적용 정보를 읽고 확인란을 체크한 뒤 ‘확인 필요 사항 보기’로 보류 결과를 확인하세요. 이 체크는 고객사 불일치를 해제하지 않습니다.";
   else if (state.extracting) message = "원문 근거 검색과 항목 추출을 진행하고 있습니다. 완료될 때까지 검토는 시작할 수 없습니다.";
-  else if (state.extraction?.status === "unavailable") message = "AI 연결을 사용할 수 없어 항목을 확정하지 못했습니다. 승인 적용을 확인한 뒤 확인 필요 항목으로 비교할 수 있습니다.";
+  else if (state.extraction?.status === "unavailable") message = "AI 연결을 사용할 수 없어 항목을 확정하지 못했습니다. 승인 적용을 확인한 뒤 확인 필요 항목으로 비교할 수 있습니다. AI를 다시 시도하려면 같은 PDF 3종을 다시 선택하고 ‘문서 읽기’를 누르거나, 사용한 예시 버튼으로 문서를 다시 불러온 뒤 ‘AI로 근거 찾고 항목 추출’을 눌러 주세요. 자동으로 재시도하지 않습니다.";
   else if (!pending) message = "추출 결과를 새 문서 버전으로 저장했습니다. 원문과 승인 적용을 사람이 다시 확인하세요.";
   else if (state.job) message = "추출 완료를 아직 확인하지 못했습니다. 진행 상태 다시 확인은 기존 작업을 조회하며 새 모델 호출을 시작하지 않습니다.";
+  else if (state.extractionRequest) message = "이전 추출 요청의 접수 여부를 아직 확인하지 못했습니다. ‘같은 추출 요청 다시 확인’을 누르면 같은 요청 식별자로 확인합니다. 새 요청은 자동으로 보내지 않습니다.";
   else if (state.extraction?.status === "failed") message = "항목 추출을 완료하지 못했습니다. 아래 실패 이유를 확인한 뒤 다시 요청할 수 있습니다.";
   setText("extraction-message", message);
   $("extraction-message").classList.toggle("fallback", customerHold || ["unavailable", "failed", "rejected"].includes(state.extraction?.status));
@@ -269,7 +338,7 @@ function acceptUpload(upload, mode, extraction = null) {
   state.upload = upload;
   state.mode = upload.mode === "text_ai" || mode === "text_ai" ? "text_ai" : "template";
   state.extraction = extraction || upload.extraction_report || null;
-  state.job = null; remember(STORAGE.job, null);
+  clearExtractionJob();
   state.review = null;
   state.explanations.clear();
   state.selected = null;
@@ -323,7 +392,20 @@ async function pollExtraction(jobId) {
   const deadline = performance.now() + 180000;
   while (performance.now() < deadline) {
     const remaining = deadline - performance.now();
-    const job = await api(`/api/extractions/${encodeURIComponent(jobId)}`, {timeout: Math.min(15000, Math.max(1, remaining))});
+    let job;
+    try {
+      job = await api(`/api/extractions/${encodeURIComponent(jobId)}`, {timeout: Math.min(15000, Math.max(1, remaining))});
+    } catch (error) {
+      if (error.status === 404) {
+        clearExtractionJob();
+        const message = "저장된 추출 기록을 찾을 수 없어 다시 요청이 필요합니다. 서버 상태를 확인한 뒤 ‘다시 시도’ 또는 AI 추출 버튼을 눌러 주세요. 새 요청은 자동으로 보내지 않습니다.";
+        state.extraction = {status: "failed", error: message};
+        const missing = new Error(message); missing.status = 404; throw missing;
+      }
+      throw error;
+    }
+    verifyExtractionSource(job, originalUploadId);
+    rememberExtractionJob(jobId, originalUploadId);
     if (job.status === "completed") {
       if (!job.upload?.upload_id || job.upload.upload_id === originalUploadId) throw new Error("새 문서 버전의 추출 결과를 확인할 수 없습니다.");
       if (job.upload.documents?.some((doc) => doc.extraction_method === "text_pending_ai")) throw new Error("추출 완료 응답에 아직 처리 전인 문서가 있습니다.");
@@ -332,7 +414,7 @@ async function pollExtraction(jobId) {
       return;
     }
     if (job.status === "failed") {
-      state.job = null; remember(STORAGE.job, null);
+      clearExtractionJob();
       state.extraction = {...(job.extraction || {}), status: "failed", error: extractionSummary(job.error || job.message || "추출 작업을 완료하지 못했습니다.")};
       throw new Error(extractionSummary(job.error || job.message || "추출 작업을 완료하지 못했습니다."));
     }
@@ -349,9 +431,23 @@ function extractUpload() {
     state.extracting = true; $("policy-confirmed").checked = false; clearReviewState(); renderExtraction(); controls();
     try {
       if (!state.job) {
-        const job = await api(`/api/uploads/${encodeURIComponent(state.upload.upload_id)}/extractions`, {method: "POST", timeout: 30000});
-        if (!job.job_id || !["running", "completed"].includes(job.status)) throw new Error("추출 작업을 시작하지 못했습니다.");
-        state.job = job.job_id; remember(STORAGE.job, state.job);
+        const sourceUploadId = state.upload.upload_id;
+        const key = extractionRequestKey(sourceUploadId);
+        let job;
+        try {
+          job = await api(`/api/uploads/${encodeURIComponent(sourceUploadId)}/extractions`, {method: "POST", headers: {"Idempotency-Key": key}, timeout: 30000});
+        } catch (error) {
+          if (error.status === 404) {
+            clearExtractionJob();
+            const message = "문서 또는 추출 기록을 찾을 수 없어 다시 요청이 필요합니다. 서버 상태를 확인한 뒤 명시적으로 다시 시도해 주세요. 문서 기록도 없으면 같은 PDF 3종을 ‘문서 읽기’로 다시 읽거나 예시 버튼으로 불러와 주세요. 새 요청은 자동으로 보내지 않습니다.";
+            state.extraction = {status: "failed", error: message};
+            const missing = new Error(message); missing.status = 404; throw missing;
+          }
+          throw error;
+        }
+        verifyExtractionSource(job, sourceUploadId);
+        if (!job.job_id || !["running", "completed", "failed"].includes(job.status)) throw new Error("추출 작업을 시작하지 못했습니다.");
+        rememberExtractionJob(job.job_id, sourceUploadId);
       }
       await pollExtraction(state.job);
     } finally { state.extracting = false; renderExtraction(); controls(); }
@@ -669,7 +765,8 @@ function exportReview() {
 async function restoreState() {
   const uploadId = recalled(STORAGE.upload);
   const reviewId = recalled(STORAGE.review);
-  const jobId = recalled(STORAGE.job);
+  const storedJob = recalled(STORAGE.job);
+  let jobId = null;
   const notes = [];
   if (uploadId) {
     try {
@@ -678,6 +775,22 @@ async function restoreState() {
       state.upload = upload;
       state.mode = upload.mode === "text_ai" ? "text_ai" : "template";
       state.extraction = upload.extraction_report || null;
+      if (extractionRequired()) {
+        const storedRequest = recalled(STORAGE.extractionRequest);
+        restoreExtractionRequest(uploadId);
+        if (storedRequest !== null && !state.extractionRequest) {
+          // A legacy job with no request record can still be polled. A
+          // malformed or different-upload record cannot bind this job safely.
+          clearStoredExtractionJob();
+          notes.push("이전 추출 요청 정보가 현재 문서와 맞지 않아 자동 조회하지 않았습니다. 원문을 확인한 뒤 추출을 다시 요청해 주세요.");
+        } else {
+          jobId = storedExtractionJob(storedJob, uploadId);
+          if (storedJob && !jobId) {
+            clearStoredExtractionJob();
+            notes.push("저장된 작업의 문서 정보가 현재 문서와 맞지 않아 자동 조회하지 않았습니다. 현재 문서의 요청 식별자는 유지하며 명시적인 재시도를 기다립니다.");
+          }
+        }
+      } else clearExtractionJob();
       $("policy-confirmed").checked = false;
       renderDocuments(); renderMode(); renderExtraction(); steps(2);
       notes.push("이전 문서 정보를 복원했습니다. 승인 적용 확인은 다시 필요합니다.");
@@ -717,7 +830,7 @@ for (const prefix of ["spec", "amendment", "handoff"]) $(prefix + "-file").addEv
   const file = $(prefix + "-file").files[0];
   setText(prefix + "-filename", file ? `${file.name} · ${(file.size / 1024).toFixed(0)} KiB` : "선택된 파일 없음");
   $(prefix + "-filename").classList.toggle("selected", Boolean(file));
-  if (state.upload || state.review || state.job) resetInputState("선택한 파일이 바뀌었습니다. 문서 읽기를 눌러 새 파일을 확인해 주세요.");
+  if (state.upload || state.review || state.job || state.extractionRequest) resetInputState("선택한 파일이 바뀌었습니다. 문서 읽기를 눌러 새 파일을 확인해 주세요.");
 });
 $("demo-d01").addEventListener("click", () => useSample("D01"));
 $("demo-d02").addEventListener("click", () => useSample("D02"));
