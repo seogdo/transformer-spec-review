@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light;
+  --report-ink: #183b46;
+  --report-muted: #587078;
+  --report-teal: #276f67;
+  --report-line: #cfdedb;
+  --report-paper: #ffffff;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body.report-page {
+  margin: 0;
+  color: var(--report-ink);
+  background: #edf2ef;
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.report-toolbar {
+  max-width: 210mm;
+  margin: 24px auto 16px;
+  padding: 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+.report-toolbar p { margin: 0; flex: 1 1 280px; color: var(--report-muted); font-size: 12px; }
+#print-button {
+  border: 1px solid var(--report-teal);
+  border-radius: 6px;
+  padding: 11px 18px;
+  background: var(--report-teal);
+  color: white;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+#print-button:hover { background: #205b55; }
+#print-button:focus-visible, .report-document a:focus-visible { outline: 3px solid #75b8a9; outline-offset: 3px; }
+#print-error { flex-basis: 100%; color: #8a402f; background: #fff2ec; border: 1px solid #e6c4b6; padding: 12px; border-radius: 6px; }
+main.report-document {
+  width: min(210mm, calc(100% - 32px));
+  margin: 0 auto 36px;
+  padding: 18mm 16mm;
+  background: var(--report-paper);
+  border: 1px solid #d8e3dc;
+  box-shadow: 0 4px 24px #173b4610;
+}
+.report-header { border-bottom: 2px solid var(--report-teal); padding-bottom: 18px; margin-bottom: 22px; }
+.report-header h1 { margin: 0 0 8px; color: var(--report-ink); font-size: 28px; line-height: 1.4; letter-spacing: -.035em; }
+.report-header p { margin: 5px 0 0; color: var(--report-muted); }
+.report-meta { margin: 18px 0; }
+.report-meta dl, dl.report-meta { display: grid; grid-template-columns: 105px minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+.report-meta dt { color: var(--report-muted); font-weight: 500; }
+.report-meta dd { margin: 0; min-width: 0; }
+.report-notice, .report-warning {
+  padding: 12px 15px;
+  margin: 16px 0;
+  border-left: 3px solid var(--report-teal);
+  background: #f0f6f3;
+  font-size: 12px;
+}
+.report-warning { border-color: #b28236; background: #fcf6e9; color: #75521d; }
+.report-notice > :first-child, .report-warning > :first-child { margin-top: 0; }
+.report-notice > :last-child, .report-warning > :last-child { margin-bottom: 0; }
+.report-section { margin-top: 27px; }
+.report-section h2 { font-size: 18px; line-height: 1.45; margin: 0 0 12px; }
+.report-section h3, .report-evidence h3 { font-size: 15px; line-height: 1.5; margin: 0 0 10px; }
+.report-section p { margin: 8px 0; }
+.report-summary { padding: 10px 0; border-top: 1px solid var(--report-line); border-bottom: 1px solid var(--report-line); }
+.report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+.report-grid > * { min-width: 0; }
+.report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 12px 0; font-size: 12px; }
+.report-table th, .report-table td { text-align: left; vertical-align: top; border: 1px solid var(--report-line); padding: 9px 10px; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+.report-table th { background: #edf4f1; color: #284f55; font-weight: 650; }
+.report-table thead { display: table-header-group; }
+.report-table tfoot { display: table-footer-group; }
+.report-status { display: inline; font-weight: 650; }
+.report-status.match { color: #23685b; }
+.report-status.mismatch { color: #9a4736; }
+.report-status.missing, .report-status.needs-review { color: #7b5b22; }
+.report-status.unknown { color: #58696c; }
+.report-evidence { border-top: 1px solid var(--report-line); padding-top: 17px; margin-top: 20px; }
+.report-source { border-left: 2px solid #b4d0c5; padding-left: 12px; margin: 16px 0; }
+.report-quote {
+  margin: 9px 0;
+  padding: 11px 13px;
+  background: #f5f8f5;
+  border: 1px solid #e0e9e1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.report-small { font-size: 11px; color: var(--report-muted); }
+.report-value > .report-small, .report-table th > .report-small { display: block; }
+.report-raw { white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; font: 11px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.report-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-document a { color: var(--report-teal); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.report-document ul, .report-document ol { padding-left: 22px; }
+.report-document li + li { margin-top: 6px; }
+
+@media (max-width: 620px) {
+  main.report-document { width: calc(100% - 20px); padding: 22px 18px; }
+  .report-toolbar { padding: 0 12px; }
+  .report-header h1 { font-size: 24px; }
+  .report-meta dl, dl.report-meta { grid-template-columns: 80px minmax(0, 1fr); }
+  .report-grid { grid-template-columns: minmax(0, 1fr); }
+  .report-table th, .report-table td { padding: 7px 5px; font-size: 11px; }
+}
+
+@page { size: A4; margin: 16mm 14mm 18mm; }
+@media print {
+  body.report-page { background: white; color: #183b46; font-size: 9pt; line-height: 1.4; }
+  .screen-only, .report-toolbar { display: none !important; }
+  main.report-document { width: 100%; max-width: none; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  .report-header { margin-bottom: 8pt; padding-bottom: 6pt; }
+  .report-header h1 { font-size: 21pt; }
+  .report-section { margin-top: 12pt; }
+  .report-section h2 { font-size: 13pt; }
+  .report-section h3, .report-evidence h3 { font-size: 11pt; }
+  h1, h2, h3, h4, dt { break-after: avoid-page; page-break-after: avoid; }
+  p, li, blockquote { orphans: 3; widows: 3; }
+  .report-table { font-size: 9pt; }
+  .report-table th, .report-table td { padding: 4pt; font-size: 8.5pt; }
+  .report-table tr { break-inside: avoid-page; page-break-inside: avoid; }
+  .report-table thead { display: table-header-group; }
+  /* Full evidence can span pages. Never clip it or force a long block to fit
+     a single page; only its heading stays with the start of its content. */
+  .report-section, .report-evidence, .report-source, .report-quote, .report-raw {
+    break-inside: auto;
+    page-break-inside: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .report-evidence { margin-top: 12pt; padding-top: 8pt; }
+  .report-meta dl, dl.report-meta { gap: 3pt 10pt; grid-template-columns: 100pt minmax(0, 1fr); }
+  .report-source { margin: 9pt 0; }
+  .report-source h4 { margin: 6pt 0; font-size: 9pt; }
+  .report-notice, .report-warning, .report-quote { font-size: 8.5pt; padding: 7pt 9pt; margin: 8pt 0; }
+  .report-small, .report-raw { font-size: 8pt; }
+  .report-document a { color: inherit; }
+  .report-notice, .report-warning, .report-table th, .report-quote { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

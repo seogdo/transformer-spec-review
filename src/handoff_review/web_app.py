@@ -25,7 +25,7 @@ from urllib.parse import quote, urlsplit
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import UploadFile
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -34,6 +34,7 @@ from .contracts import FIELD_KEYS, STATUSES
 from .customers import VERSION as CUSTOMER_CHECK_VERSION, check_customers
 from .review import review_case
 from .explanation import explain_review
+from .report import render_report
 
 ROOT = Path(__file__).resolve().parents[2]
 ROLES = {"spec_file": "customer_spec", "amendment_file": "amendment", "handoff_file": "handoff"}
@@ -560,13 +561,18 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         # Export never changes the review into an approved product/design decision.
         return JSONResponse(record, headers={"Content-Disposition": f'attachment; filename="handoff-review-{review_id[:8]}.json"'})
 
+    @app.get("/api/reviews/{review_id}/report", response_class=HTMLResponse)
+    def report(review_id: str):
+        # Read only: no model, comparison, evidence rebinding or record write.
+        return HTMLResponse(render_report(review_record(review_id)))
+
     @app.get("/")
     def index():
         return FileResponse(ROOT / "web" / "index.html", media_type="text/html")
 
     @app.get("/assets/{filename}")
     def asset(filename: str):
-        if filename not in {"app.css", "app.js"}:
+        if filename not in {"app.css", "app.js", "report.css", "report.js"}:
             raise HTTPException(404)
         return FileResponse(ROOT / "web" / filename,
                             media_type="text/css" if filename.endswith(".css") else "text/javascript")

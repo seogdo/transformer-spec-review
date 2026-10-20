@@ -175,6 +175,7 @@ function controls() {
   $("explain-button").disabled = state.busy || !canExplainReview(state.review);
   $("explain-button").title = state.review && !canExplainReview(state.review) ? explainBlockedMessage(state.review) : "";
   $("export-button").disabled = state.busy || !state.review || !$("export-confirmed").checked;
+  $("report-button").disabled = state.busy || !state.review || !$("export-confirmed").checked;
   for (const input of $("amendment-options").querySelectorAll("input")) input.disabled = state.busy || input.dataset.approved !== "true";
 }
 function setBusy(busy, message) {
@@ -617,7 +618,7 @@ function renderReview() {
   setText("review-field-note", missing.length
     ? `이 기록은 ${review.results.length}개 항목을 담고 있으며, 현재 10개 항목 중 ${missing.map((field) => CURRENT_FIELDS[field]).join("·")} 검토가 포함되지 않았습니다. 현재 범위 전체의 검토 완료를 의미하지 않습니다. AI 구조 확인을 사용하려면 새 항목이 있는 문서를 다시 읽고 검토하세요. 기존 기록과 내보내기는 그대로 보존합니다.`
     : "이 기록의 항목 구성이 현재 10개 항목 범위와 다릅니다. 저장된 결과를 그대로 표시하며, 현재 범위 전체의 검토 완료로 해석하지 않습니다. AI 구조 확인을 사용하려면 문서를 다시 읽고 검토하세요.");
-  setText("export-description", `저장된 ${review.results.length}개 항목의 결과와 근거를 그대로 JSON으로 내려받습니다. 누락된 검토 항목을 자동 추가하지 않습니다. 저장은 설계 승인·발주·제작 지시를 의미하지 않습니다.`);
+  setText("export-description", `저장된 ${review.results.length}개 항목의 결과와 근거를 그대로 JSON으로 내려받거나 회의용 보고서로 엽니다. 보고서는 브라우저 인쇄에서 PDF로 저장할 수 있습니다. 누락된 검토 항목을 자동 추가하지 않습니다. 저장은 설계 승인·발주·제작 지시를 의미하지 않습니다.`);
   const summary = $("summary-cards"); summary.replaceChildren();
   for (const status of Object.keys(STATUS)) {
     const card = element("div", `summary-card ${STATUS_CLASS[status]}`);
@@ -762,6 +763,26 @@ function exportReview() {
     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 15000);
   }, exportReview);
 }
+function openReviewReport() {
+  // Keep this synchronous with the user's click: no automatic popup, new
+  // inference, or request before the current record has been checked.
+  if (state.busy || !state.review || !$("export-confirmed").checked) return;
+  try {
+    const id = state.review.review_id;
+    if (typeof id !== "string" || !/^[a-f0-9]{32}$/.test(id)) throw new Error("검토 기록 식별자를 확인할 수 없습니다. 저장된 결과를 다시 불러와 주세요.");
+    const url = safeUrl(`/api/reviews/${encodeURIComponent(id)}/report`);
+    const link = element("a");
+    link.href = url.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    clearError();
+    document.body.append(link);
+    try { link.click(); } finally { link.remove(); }
+    // Opening a tab does not prove it loaded, printed, or saved successfully.
+  } catch (error) {
+    showError(error, openReviewReport);
+  }
+}
 async function restoreState() {
   const uploadId = recalled(STORAGE.upload);
   const reviewId = recalled(STORAGE.review);
@@ -847,6 +868,7 @@ $("policy-confirmed").addEventListener("change", controls);
 $("review-button").addEventListener("click", runReview);
 $("export-confirmed").addEventListener("change", controls);
 $("export-button").addEventListener("click", exportReview);
+$("report-button").addEventListener("click", openReviewReport);
 $("explain-button").addEventListener("click", explainReview);
 $("filter-all").addEventListener("click", () => { state.filter = "all"; renderTable(); });
 $("filter-attention").addEventListener("click", () => { state.filter = "attention"; renderTable(); });
