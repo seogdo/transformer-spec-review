@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="고객 사양, 승인 변경, 내부 인계표의 정합성을 근거와 함께 확인하는 연구용 검토 도구">
+  <title>수주 인계 검토</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">검토 화면으로 이동</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#"><span class="brand-mark" aria-hidden="true">H</span><span>수주 인계 검토<span class="brand-sub">HANDOFF REVIEW</span></span></a>
+      <div class="connection"><span id="health-dot" class="dot"></span><span id="health-label">서버 확인 중</span><button id="health-retry" class="text-button" type="button">다시 확인</button></div>
+    </div>
+  </header>
+
+  <main id="workspace" class="workspace">
+    <div class="scope-banner"><span class="banner-symbol" aria-hidden="true">i</span><p><strong>연구용 가상 문서 검토</strong><span>문서 간 정합성 확인을 돕습니다. 설계 승인·제품 안전·시험 합격을 판정하지 않습니다.</span></p></div>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">수주 확정 후, 기술 인계 전</p><h1 id="page-title">문서의 차이를 찾고,<br>근거로 확인하세요.</h1><p class="intro-description">고객 사양과 승인된 변경이 내부 인계표에<br class="desktop-break"> 빠짐없이 반영되었는지 확인합니다.</p></div>
+      <aside class="intro-note"><span class="note-tag">현재 신규 검토 범위</span><p>한 프로젝트 · 한 제품</p><div class="scope-numbers"><span><b>3</b>종 문서</span><span><b>10</b>개 고정 항목</span></div><p class="muted small">모호한 내용은 확정하지 않고<br>담당자 확인 항목으로 남깁니다.</p></aside>
+    </section>
+
+    <nav class="steps" aria-label="검토 단계">
+      <a id="step-1" class="step active" href="#documents"><span class="step-number">01</span><span>문서 준비</span></a>
+      <a id="step-2" class="step" href="#policy"><span class="step-number">02</span><span>승인 적용 확인</span></a>
+      <a id="step-3" class="step" href="#results"><span class="step-number">03</span><span>결과와 근거 검토</span></a>
+    </nav>
+
+    <div id="task-status" class="task-status" role="status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="task-message"></span></div>
+    <div id="error-box" class="message error-message" role="alert" hidden><div><strong>작업을 완료하지 못했습니다</strong><p id="error-text"></p></div><button id="error-retry" class="button button-secondary" type="button">다시 시도</button><button id="error-dismiss" class="icon-button" type="button" aria-label="오류 알림 닫기">×</button></div>
+    <p id="restore-note" class="restore-note" role="status" hidden></p>
+
+    <section id="documents" class="panel" aria-labelledby="documents-title">
+      <div class="section-heading"><div><p class="section-kicker">01 / PREPARE</p><h2 id="documents-title">검토할 문서 3종을 준비하세요</h2></div><span class="section-tag">PDF</span></div>
+      <p class="section-description">현재 지원하는 가상 문서 템플릿을 사용합니다. 파일당 최대 5 MiB · 20쪽이며, 스캔 PDF와 OCR은 지원하지 않습니다.</p>
+      <p class="field-scope-help">먼저 문서 3종의 고객사 표기를 확인한 뒤, 탭절환기 방식(OLTC / DETC)과 설치 구분(옥내형 / 옥외형)을 포함한 기술사양 10개 항목을 비교합니다. 고객사 확인은 별도 기본정보이며 재질은 검토 범위에 포함하지 않습니다.</p>
+      <div class="mode-selector"><label for="upload-mode">문서 처리 방식</label><select id="upload-mode"><option value="template">기존 정형 PDF</option><option value="text_ai">AI 근거 추출용 텍스트 PDF</option></select><p id="mode-help" class="small muted">제공된 정형 PDF의 항목을 읽어 바로 승인 적용을 확인합니다.</p></div>
+      <div id="text-mode-notice" class="message warning-message" hidden><strong>지원하는 가상 텍스트 문서만 사용하세요</strong><p>가상 자료 선언과 상단 메타데이터 3줄(문서 ID·프로젝트 / 역할·상태 / 승인자·대체 대상)이 필요합니다. 본문의 표·서신과 항목 별칭은 다양하게 작성할 수 있습니다. 스캔 PDF, OCR, 범용 회사 문서는 지원하지 않습니다.</p></div>
+      <form id="upload-form">
+        <div class="upload-grid">
+          <label class="upload-card"><span class="file-number">문서 01</span><strong>고객 기술사양서</strong><span class="upload-description">최초 요구사항의 기준 문서</span><input id="spec-file" name="spec_file" type="file" accept=".pdf,application/pdf" required><span class="file-selection" id="spec-filename">선택된 파일 없음</span></label>
+          <label class="upload-card"><span class="file-number">문서 02</span><strong>기술 변경 합의서</strong><span class="upload-description">승인 여부와 대체 관계 확인</span><input id="amendment-file" name="amendment_file" type="file" accept=".pdf,application/pdf" required><span class="file-selection" id="amendment-filename">선택된 파일 없음</span></label>
+          <label class="upload-card"><span class="file-number">문서 03</span><strong>내부 수주 인계표</strong><span class="upload-description">요구사항 반영 여부를 비교할 문서</span><input id="handoff-file" name="handoff_file" type="file" accept=".pdf,application/pdf" required><span class="file-selection" id="handoff-filename">선택된 파일 없음</span></label>
+        </div>
+        <div class="upload-actions"><p class="small muted">회사 기밀·실제 고객 문서·개인정보를 업로드하지 마세요.</p><button id="upload-button" class="button button-primary" type="submit">문서 읽기 <span aria-hidden="true">→</span></button></div>
+      </form>
+      <div class="demo-strip"><div><strong>파일 없이 먼저 살펴보기</strong><p class="small muted">예시 PDF 3종을 실제로 불러와 같은 과정을 진행합니다.</p></div><div class="demo-buttons"><button id="demo-d01" class="button button-demo" type="button" disabled>예시 01 · 변경 검토</button><button id="demo-d02" class="button button-demo" type="button" disabled>예시 02 · 반영 확인</button><button id="demo-c01" class="button button-demo" type="button" disabled>C01 · 고객사 혼입</button></div><p id="samples-note" class="small muted">예시 문서 확인 중</p></div>
+      <div class="demo-strip text-demo-strip"><div><strong>표·서신 형태의 AI 추출 예시</strong><p class="small muted">PDF를 읽은 뒤 AI 추출 버튼을 눌러 근거를 찾습니다.</p></div><div class="demo-buttons"><button id="demo-v01" class="button button-demo" type="button" disabled>V01 · 텍스트 문서</button><button id="demo-v02" class="button button-demo" type="button" disabled>V02 · 다른 표현</button><button id="demo-v03" class="button button-demo" type="button" disabled>V03 · 탭·설치 변경</button></div></div>
+    </section>
+
+    <section id="policy" class="panel" aria-labelledby="policy-title">
+      <div class="section-heading"><div><p class="section-kicker">02 / CONFIRM</p><h2 id="policy-title">기준 문서와 승인 적용을 확인하세요</h2></div><span id="upload-badge" class="section-tag">문서 대기</span></div>
+      <div id="policy-empty" class="empty-state compact"><span class="empty-icon" aria-hidden="true">≡</span><p>먼저 문서를 읽으면 승인 상태와 대체 관계를 확인할 수 있습니다.</p></div>
+      <div id="policy-content" hidden>
+        <div id="document-cards" class="document-grid"></div>
+        <section id="policy-customer-check" class="customer-check" aria-label="고객사 기본정보 확인"></section>
+        <div id="document-warnings" class="message warning-message" hidden></div>
+        <section id="extraction-section" class="extraction-section" aria-labelledby="extraction-title" hidden><div class="extraction-heading"><div><span class="note-tag">텍스트 PDF · 근거 추출</span><h3 id="extraction-title">원문에서 항목별 근거를 찾습니다</h3><p class="small muted">AI가 찾은 값과 출처는 문서 추출 결과입니다. 문서나 제품의 승인 판정이 아닙니다.</p></div><button id="extract-button" class="button button-primary" type="button">AI로 근거 찾고 항목 추출</button></div><p id="extraction-message" class="extraction-message" role="status" aria-live="polite"></p><details id="extraction-details" class="trace-details" hidden><summary>검색·추출 과정 보기</summary><div id="extraction-trace"></div></details></section>
+        <div class="policy-box"><div><h3>적용할 승인 변경</h3><p class="small muted">작성 날짜만으로 우선순위를 정하지 않습니다. 아래 문서의 승인 표기와 대체 관계를 확인하세요.</p></div><div id="amendment-options" class="amendment-options"></div></div>
+        <label class="confirmation"><input id="policy-confirmed" type="checkbox"><span>고객사 확인 결과, 기준 문서, 프로젝트, 적용할 승인 변경과 대체 관계를 확인했습니다.<small>이 체크로 고객사 불일치·누락·모호함을 해제할 수 없습니다. 승인 표기는 입력 메타데이터이며 실제 고객 관계·전자서명·승인 권한을 인증하지 않습니다.</small></span></label>
+        <div class="section-end"><button id="review-button" class="button button-primary" type="button" disabled>10개 항목 검토하기 <span aria-hidden="true">→</span></button></div>
+      </div>
+    </section>
+
+    <section id="results" class="results-section" aria-labelledby="results-title">
+      <div class="section-heading result-heading"><div><p class="section-kicker">03 / REVIEW</p><h2 id="results-title">검토 결과와 원문 근거</h2></div><span id="review-badge" class="section-tag">검토 대기</span></div>
+      <div id="results-empty" class="panel empty-state"><span class="empty-icon" aria-hidden="true">↗</span><h3>확인한 문서로 검토를 시작하세요</h3><p>항목별 요구값, 인계값, 확인 이유와 원문 근거가 이곳에 표시됩니다.</p></div>
+      <div id="results-content" hidden>
+        <section id="review-customer-check" class="customer-check customer-check-result" aria-label="이 기록의 고객사 기본정보 확인"></section>
+        <div id="summary-cards" class="summary-grid" aria-label="상태별 항목 수"></div>
+        <p id="review-field-note" class="message warning-message" role="status" hidden></p>
+        <div id="review-warnings" class="message warning-message" hidden></div>
+        <details id="review-extraction-details" class="trace-details review-trace" hidden><summary>이 검토에 사용한 검색·추출 과정</summary><div id="review-extraction-trace"></div></details>
+        <div class="result-toolbar"><div class="filter-group" role="group" aria-label="결과 필터"><button id="filter-all" class="filter active" type="button" aria-pressed="true">전체 항목</button><button id="filter-attention" class="filter" type="button" aria-pressed="false">확인 필요 항목</button></div><p class="small muted">항목을 선택하면 근거 영역에서 원문을 확인할 수 있습니다.</p></div>
+        <div class="review-layout">
+          <div class="panel table-panel"><div class="table-scroll"><table><caption id="results-caption" class="sr-only">저장된 검토 항목의 요구값과 인계값 비교 결과</caption><thead><tr><th scope="col">검토 항목</th><th scope="col">요구값</th><th scope="col">인계값</th><th scope="col">상태</th><th scope="col">근거</th></tr></thead><tbody id="results-body"></tbody></table></div><p id="filter-empty" class="filter-empty" hidden>이 필터에 해당하는 항목이 없습니다.</p></div>
+          <aside id="evidence-panel" class="panel evidence-panel" aria-labelledby="evidence-title"><div class="evidence-header"><p class="section-kicker">EVIDENCE</p><h3 id="evidence-title">항목을 선택하세요</h3></div><div id="evidence-content"><p class="muted small">결과표의 항목을 선택하면 판단 이유와 문서·페이지·원문을 볼 수 있습니다.</p></div></aside>
+        </div>
+        <section class="panel ai-panel" aria-labelledby="ai-title"><div><span class="note-tag">선택 기능</span><h3 id="ai-title">AI가 정리한 항목 정보를 확인</h3><p class="small muted">버튼을 눌렀을 때만 로컬 AI를 요청합니다. AI가 옮긴 구조화 정보가 기준 사실과 같은지 확인하며, 화면 설명은 코드 서식으로 표시합니다. 불일치하거나 실패하면 기존 코드 설명을 유지합니다.</p><p id="model-label" class="model-label">모델 상태 확인 중</p></div><button id="explain-button" class="button button-secondary" type="button">AI 구조 확인 요청</button><p id="ai-note" class="ai-note" role="status" hidden></p></section>
+        <div class="panel export-panel"><div><h3>담당자 검토 기록 저장</h3><p id="export-description" class="small muted">저장된 검토 결과와 근거를 그대로 JSON으로 내려받습니다. 저장은 설계 승인·발주·제작 지시를 의미하지 않습니다.</p><label class="confirmation export-confirmation"><input id="export-confirmed" type="checkbox"><span>표시된 결과와 원문을 사람이 검토했습니다.</span></label></div><button id="export-button" class="button button-primary" type="button" disabled>검토 기록 내려받기</button></div>
+        <details class="limitations"><summary>검토 범위와 한계</summary><ul id="limitations-list"></ul></details>
+      </div>
+    </section>
+    <footer class="footer"><span>HANDOFF REVIEW</span><p>확정할 수 없는 내용은 확인 필요로 남깁니다. 최종 판단과 승인은 담당자가 수행합니다.</p></footer>
+  </main>
+</body>
+</html>

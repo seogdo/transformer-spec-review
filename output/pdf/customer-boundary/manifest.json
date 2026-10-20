@@ -1,0 +1,184 @@
+{
+  "schema_version": "customer-boundary-inputs-v1",
+  "created_at": "2026-10-20T05:26:42.797887+00:00",
+  "synthetic_only": true,
+  "project_id": "BROWSER-CUSTOMER",
+  "mode": "text_ai",
+  "expectation_origin": "manually_authored_not_application_engine_output",
+  "purpose": "고객사 누락·미등록·상충의 UI 경계 확인용 개발 입력",
+  "limitations": [
+    "실제 고객 자료·거래 관계·법인 동일성 검증이 아닙니다.",
+    "독립 holdout이나 모델 성능 평가 자료가 아닙니다.",
+    "고객사 기본정보는 기술사양 10개와 분리합니다.",
+    "수동 예상은 PDF 본문이나 모델 입력에 포함하지 않습니다."
+  ],
+  "files": [
+    {
+      "document_id": "SPEC-CB",
+      "role": "customer_spec",
+      "filename": "SPEC-CB.pdf",
+      "path": "output/pdf/customer-boundary/SPEC-CB.pdf",
+      "project_id": "BROWSER-CUSTOMER",
+      "status": "approved",
+      "approved_by": "DEMO-REVIEWER",
+      "supersedes": null,
+      "authored_customer_headers": [
+        "한전"
+      ],
+      "manual_expected_customer_status": "recognized",
+      "page_count": 1,
+      "pages": [
+        1
+      ],
+      "customer_header_count": 1,
+      "technical_line_count": 10,
+      "sha256": "0ed8da5554d8fb6f146a9158b160c53ac9e78aeb9e357c404296b035b041e129",
+      "bytes": 50281,
+      "text_check": "authored_metadata_declaration_and_technical_lines_present"
+    },
+    {
+      "document_id": "AMD-CB",
+      "role": "amendment",
+      "filename": "AMD-CB.pdf",
+      "path": "output/pdf/customer-boundary/AMD-CB.pdf",
+      "project_id": "BROWSER-CUSTOMER",
+      "status": "approved",
+      "approved_by": "DEMO-REVIEWER",
+      "supersedes": "SPEC-CB",
+      "authored_customer_headers": [
+        "KEPCO"
+      ],
+      "manual_expected_customer_status": "recognized",
+      "page_count": 1,
+      "pages": [
+        1
+      ],
+      "customer_header_count": 1,
+      "technical_line_count": 1,
+      "sha256": "e29167a08bf4ad4bbe21fdf4e614f509b964a6f938fae5059bac74755605906c",
+      "bytes": 47314,
+      "text_check": "authored_metadata_declaration_and_technical_lines_present"
+    },
+    {
+      "document_id": "HANDOFF-MISSING",
+      "role": "handoff",
+      "filename": "HANDOFF-MISSING.pdf",
+      "path": "output/pdf/customer-boundary/HANDOFF-MISSING.pdf",
+      "project_id": "BROWSER-CUSTOMER",
+      "status": "approved",
+      "approved_by": "DEMO-REVIEWER",
+      "supersedes": null,
+      "authored_customer_headers": [],
+      "manual_expected_customer_status": "missing",
+      "page_count": 1,
+      "pages": [
+        1
+      ],
+      "customer_header_count": 0,
+      "technical_line_count": 10,
+      "sha256": "771ad85050627891eff86f417dac8b40d7837fe35774323aa603e170ca4cbbed",
+      "bytes": 50281,
+      "text_check": "authored_metadata_declaration_and_technical_lines_present"
+    },
+    {
+      "document_id": "HANDOFF-UNKNOWN",
+      "role": "handoff",
+      "filename": "HANDOFF-UNKNOWN.pdf",
+      "path": "output/pdf/customer-boundary/HANDOFF-UNKNOWN.pdf",
+      "project_id": "BROWSER-CUSTOMER",
+      "status": "approved",
+      "approved_by": "DEMO-REVIEWER",
+      "supersedes": null,
+      "authored_customer_headers": [
+        "Powergrid"
+      ],
+      "manual_expected_customer_status": "unknown",
+      "page_count": 1,
+      "pages": [
+        1
+      ],
+      "customer_header_count": 1,
+      "technical_line_count": 10,
+      "sha256": "55363f05ac734b35208d2a9be85a101f506e0f70d70bf6c5c2dcd9d8e5e9104a",
+      "bytes": 50513,
+      "text_check": "authored_metadata_declaration_and_technical_lines_present"
+    },
+    {
+      "document_id": "HANDOFF-AMBIGUOUS",
+      "role": "handoff",
+      "filename": "HANDOFF-AMBIGUOUS.pdf",
+      "path": "output/pdf/customer-boundary/HANDOFF-AMBIGUOUS.pdf",
+      "project_id": "BROWSER-CUSTOMER",
+      "status": "approved",
+      "approved_by": "DEMO-REVIEWER",
+      "supersedes": null,
+      "authored_customer_headers": [
+        "한전",
+        "SK하이닉스"
+      ],
+      "manual_expected_customer_status": "ambiguous",
+      "page_count": 1,
+      "pages": [
+        1
+      ],
+      "customer_header_count": 2,
+      "technical_line_count": 10,
+      "sha256": "93f2e3ae81831567564417ed365c2b7f805cfeda1e55455794745f01b6c39cdd",
+      "bytes": 50732,
+      "text_check": "authored_metadata_declaration_and_technical_lines_present"
+    }
+  ],
+  "cases": [
+    {
+      "id": "CB-MISSING",
+      "mode": "text_ai",
+      "files": {
+        "spec_file": "SPEC-CB.pdf",
+        "amendment_file": "AMD-CB.pdf",
+        "handoff_file": "HANDOFF-MISSING.pdf"
+      },
+      "manual_expectation": {
+        "handoff_customer_status": "missing",
+        "customer_check_status": "NEEDS_REVIEW",
+        "can_compare": false,
+        "all_ten_technical_statuses": "NEEDS_REVIEW",
+        "ai_extraction_required_for_hold_view": false,
+        "note": "사람이 고객사 확인 결과를 읽고 확인란을 체크한 뒤, AI 추출 없이 보류 결과를 조회하는 UI 경계 사례입니다."
+      }
+    },
+    {
+      "id": "CB-UNKNOWN",
+      "mode": "text_ai",
+      "files": {
+        "spec_file": "SPEC-CB.pdf",
+        "amendment_file": "AMD-CB.pdf",
+        "handoff_file": "HANDOFF-UNKNOWN.pdf"
+      },
+      "manual_expectation": {
+        "handoff_customer_status": "unknown",
+        "customer_check_status": "NEEDS_REVIEW",
+        "can_compare": false,
+        "all_ten_technical_statuses": "NEEDS_REVIEW",
+        "ai_extraction_required_for_hold_view": false,
+        "note": "사람이 고객사 확인 결과를 읽고 확인란을 체크한 뒤, AI 추출 없이 보류 결과를 조회하는 UI 경계 사례입니다."
+      }
+    },
+    {
+      "id": "CB-AMBIGUOUS",
+      "mode": "text_ai",
+      "files": {
+        "spec_file": "SPEC-CB.pdf",
+        "amendment_file": "AMD-CB.pdf",
+        "handoff_file": "HANDOFF-AMBIGUOUS.pdf"
+      },
+      "manual_expectation": {
+        "handoff_customer_status": "ambiguous",
+        "customer_check_status": "NEEDS_REVIEW",
+        "can_compare": false,
+        "all_ten_technical_statuses": "NEEDS_REVIEW",
+        "ai_extraction_required_for_hold_view": false,
+        "note": "사람이 고객사 확인 결과를 읽고 확인란을 체크한 뒤, AI 추출 없이 보류 결과를 조회하는 UI 경계 사례입니다."
+      }
+    }
+  ]
+}

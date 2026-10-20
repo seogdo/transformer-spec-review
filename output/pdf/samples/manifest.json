@@ -1,0 +1,120 @@
+{
+  "synthetic_only": true,
+  "schema_version": "template-customer-pdf-1",
+  "notice": "고객사 표기는 식별 기능 시험용이며 실제 거래를 뜻하지 않습니다.",
+  "samples": [
+    {
+      "case_id": "D01",
+      "document_id": "SPEC-001",
+      "role": "customer_spec",
+      "customer_name": "한국전력",
+      "project_id": "DEMO-TR-001",
+      "supersedes": null,
+      "path": "output/pdf/samples/D01/01_customer_spec.pdf"
+    },
+    {
+      "case_id": "D01",
+      "document_id": "AMD-001",
+      "role": "amendment",
+      "customer_name": "KEPCO",
+      "project_id": "DEMO-TR-001",
+      "supersedes": "SPEC-001",
+      "path": "output/pdf/samples/D01/02_amendment.pdf"
+    },
+    {
+      "case_id": "D01",
+      "document_id": "HANDOFF-001",
+      "role": "handoff",
+      "customer_name": "한전",
+      "project_id": "DEMO-TR-001",
+      "supersedes": null,
+      "path": "output/pdf/samples/D01/03_handoff.pdf"
+    },
+    {
+      "case_id": "D02",
+      "document_id": "SPEC-001",
+      "role": "customer_spec",
+      "customer_name": "한국전력",
+      "project_id": "DEMO-TR-001",
+      "supersedes": null,
+      "path": "output/pdf/samples/D02/01_customer_spec.pdf"
+    },
+    {
+      "case_id": "D02",
+      "document_id": "AMD-001",
+      "role": "amendment",
+      "customer_name": "KEPCO",
+      "project_id": "DEMO-TR-001",
+      "supersedes": "SPEC-001",
+      "path": "output/pdf/samples/D02/02_amendment.pdf"
+    },
+    {
+      "case_id": "D02",
+      "document_id": "HANDOFF-001",
+      "role": "handoff",
+      "customer_name": "한전",
+      "project_id": "DEMO-TR-001",
+      "supersedes": null,
+      "path": "output/pdf/samples/D02/03_handoff.pdf"
+    },
+    {
+      "case_id": "C01",
+      "document_id": "SPEC-C01",
+      "role": "customer_spec",
+      "customer_name": "한국전력",
+      "project_id": "DEMO-C01",
+      "supersedes": null,
+      "path": "output/pdf/samples/C01/01_customer_spec.pdf"
+    },
+    {
+      "case_id": "C01",
+      "document_id": "AMD-C01",
+      "role": "amendment",
+      "customer_name": "한국전력",
+      "project_id": "DEMO-C01",
+      "supersedes": "SPEC-C01",
+      "path": "output/pdf/samples/C01/02_amendment.pdf"
+    },
+    {
+      "case_id": "C01",
+      "document_id": "HANDOFF-C01",
+      "role": "handoff",
+      "customer_name": "SK하이닉스",
+      "project_id": "DEMO-C01",
+      "supersedes": null,
+      "path": "output/pdf/samples/C01/03_handoff.pdf"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "D01",
+      "review_policy": {
+        "base_id": "SPEC-001",
+        "approved_amendment_ids": [
+          "AMD-001"
+        ],
+        "handoff_id": "HANDOFF-001"
+      }
+    },
+    {
+      "case_id": "D02",
+      "review_policy": {
+        "base_id": "SPEC-001",
+        "approved_amendment_ids": [
+          "AMD-001"
+        ],
+        "handoff_id": "HANDOFF-001"
+      }
+    },
+    {
+      "case_id": "C01",
+      "review_policy": {
+        "base_id": "SPEC-C01",
+        "approved_amendment_ids": [
+          "AMD-C01"
+        ],
+        "handoff_id": "HANDOFF-C01"
+      }
+    }
+  ]
+}

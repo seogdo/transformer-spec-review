@@ -1,0 +1,185 @@
+{
+  "schema_version": "fresh-evaluation-v1",
+  "cases": [
+    {
+      "case_id": "F01",
+      "documents": [
+        {
+          "document_id": "SPEC-F01",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F01/SPEC-F01.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F01",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F01/AMD-F01.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F01",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F01/HANDOFF-F01.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F01",
+        "handoff_id": "HANDOFF-F01",
+        "approved_amendment_ids": [
+          "AMD-F01"
+        ]
+      }
+    },
+    {
+      "case_id": "F02",
+      "documents": [
+        {
+          "document_id": "SPEC-F02",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F02/SPEC-F02.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F02",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F02/AMD-F02.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F02",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F02/HANDOFF-F02.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F02",
+        "handoff_id": "HANDOFF-F02",
+        "approved_amendment_ids": [
+          "AMD-F02"
+        ]
+      }
+    },
+    {
+      "case_id": "F03",
+      "documents": [
+        {
+          "document_id": "SPEC-F03",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F03/SPEC-F03.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F03",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F03/AMD-F03.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F03",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F03/HANDOFF-F03.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F03",
+        "handoff_id": "HANDOFF-F03",
+        "approved_amendment_ids": [
+          "AMD-F03"
+        ]
+      }
+    },
+    {
+      "case_id": "F04",
+      "documents": [
+        {
+          "document_id": "SPEC-F04",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F04/SPEC-F04.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F04",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F04/AMD-F04.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F04",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F04/HANDOFF-F04.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F04",
+        "handoff_id": "HANDOFF-F04",
+        "approved_amendment_ids": [
+          "AMD-F04"
+        ]
+      }
+    },
+    {
+      "case_id": "F05",
+      "documents": [
+        {
+          "document_id": "SPEC-F05",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F05/SPEC-F05.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F05",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F05/AMD-F05.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F05",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F05/HANDOFF-F05.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F05",
+        "handoff_id": "HANDOFF-F05",
+        "approved_amendment_ids": [
+          "AMD-F05"
+        ]
+      }
+    },
+    {
+      "case_id": "F06",
+      "documents": [
+        {
+          "document_id": "SPEC-F06",
+          "role": "customer_spec",
+          "path": "output/pdf/fresh-evaluation/F06/SPEC-F06.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "AMD-F06",
+          "role": "amendment",
+          "path": "output/pdf/fresh-evaluation/F06/AMD-F06.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-F06",
+          "role": "handoff",
+          "path": "output/pdf/fresh-evaluation/F06/HANDOFF-F06.pdf",
+          "page_count": 1
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-F06",
+        "handoff_id": "HANDOFF-F06",
+        "approved_amendment_ids": [
+          "AMD-F06"
+        ]
+      }
+    }
+  ]
+}

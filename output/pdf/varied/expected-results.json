@@ -1,0 +1,55 @@
+{
+  "synthetic_only": true,
+  "evaluation_scope": "authored_development_examples_not_independent_holdout",
+  "do_not_send_to_model": true,
+  "cases": [
+    {
+      "case_id": "V01",
+      "expected": {
+        "rated_power": "MATCH",
+        "hv_voltage": "MATCH",
+        "lv_voltage": "MATCH",
+        "frequency": "MATCH",
+        "phases": "MATCH",
+        "vector_group": "MATCH",
+        "cooling_type": "MATCH",
+        "fan_supply_voltage": "MISMATCH",
+        "tap_changer_type": "MATCH",
+        "installation_type": "MATCH"
+      },
+      "review_note": "고객 팬 전원 380 V는 승인 서신의 440 V로 대체됐지만 인계 메모는 380 V입니다."
+    },
+    {
+      "case_id": "V02",
+      "expected": {
+        "rated_power": "MATCH",
+        "hv_voltage": "MATCH",
+        "lv_voltage": "MATCH",
+        "frequency": "NEEDS_REVIEW",
+        "phases": "MATCH",
+        "vector_group": "MATCH",
+        "cooling_type": "MATCH",
+        "fan_supply_voltage": "MATCH",
+        "tap_changer_type": "MATCH",
+        "installation_type": "MATCH"
+      },
+      "review_note": "팬 변경 반영, 단위 동등성, DETC/무전압 탭절환기 및 옥내형/INDOOR 동등성을 확인합니다. 인계 메모의 명시 미기재 항목은 AI 추출 게이트에서 보류합니다."
+    },
+    {
+      "case_id": "V03",
+      "expected": {
+        "rated_power": "MATCH",
+        "hv_voltage": "MATCH",
+        "lv_voltage": "MATCH",
+        "frequency": "MATCH",
+        "phases": "MATCH",
+        "vector_group": "MATCH",
+        "cooling_type": "MATCH",
+        "fan_supply_voltage": "MATCH",
+        "tap_changer_type": "MISMATCH",
+        "installation_type": "MISMATCH"
+      },
+      "review_note": "승인 서신은 탭절환기 방식을 OLTC, 설치 구분을 옥외형으로 변경했지만 인계 메모에는 DETC와 옥내형이 남아 있습니다. 실제 공학설계 적합성을 판정하는 사례가 아닙니다."
+    }
+  ]
+}

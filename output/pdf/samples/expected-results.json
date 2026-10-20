@@ -1,0 +1,44 @@
+{
+  "synthetic_only": true,
+  "do_not_send_to_model": true,
+  "evaluation_scope": "authored_development_examples_not_independent_holdout",
+  "cases": [
+    {
+      "case_id": "D01",
+      "customer_identity_expected": "MATCH"
+    },
+    {
+      "case_id": "D02",
+      "customer_identity_expected": "MATCH"
+    },
+    {
+      "case_id": "C01",
+      "customer_identity_expected": "MISMATCH",
+      "technical_input_relationship": {
+        "rated_power": "MATCH",
+        "hv_voltage": "MATCH",
+        "lv_voltage": "MATCH",
+        "frequency": "MATCH",
+        "phases": "MATCH",
+        "vector_group": "MATCH",
+        "cooling_type": "MATCH",
+        "fan_supply_voltage": "MATCH",
+        "tap_changer_type": "MATCH",
+        "installation_type": "MATCH"
+      },
+      "expected": {
+        "rated_power": "NEEDS_REVIEW",
+        "hv_voltage": "NEEDS_REVIEW",
+        "lv_voltage": "NEEDS_REVIEW",
+        "frequency": "NEEDS_REVIEW",
+        "phases": "NEEDS_REVIEW",
+        "vector_group": "NEEDS_REVIEW",
+        "cooling_type": "NEEDS_REVIEW",
+        "fan_supply_voltage": "NEEDS_REVIEW",
+        "tap_changer_type": "NEEDS_REVIEW",
+        "installation_type": "NEEDS_REVIEW"
+      },
+      "review_note": "기술 입력은 D02와 같지만 인계표 고객사만 다릅니다. 고객사 불일치로 최종 기술판정 10개를 모두 보류합니다. 고객사 확인을 기술 항목의 값 관계와 구분하며 실제 거래관계를 뜻하지 않습니다."
+    }
+  ]
+}

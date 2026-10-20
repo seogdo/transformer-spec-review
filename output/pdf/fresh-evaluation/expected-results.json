@@ -1,0 +1,1832 @@
+{
+  "schema_version": "fresh-evaluation-v1",
+  "evaluation_scope": "Newly authored synthetic examples for a prototype trial. The expectations are manually specified from the public contract and frozen before model execution. This is neither an independent real-world evaluation nor a production holdout.",
+  "do_not_send_to_model": true,
+  "value_scoring_policy": "NEEDS_REVIEW rows deliberately have expected=null and actual=null. Their authored_* annotations preserve the author's technical interpretation but are excluded from confirmed-value agreement scoring.",
+  "cases": [
+    {
+      "case_id": "F01",
+      "customer_status": "MATCH",
+      "fields": {
+        "rated_power": {
+          "status": "MATCH",
+          "expected": {
+            "value": "37500",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "37500",
+            "unit": "kVA"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 kVA로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "정격용량: 37.5 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "정격용량: 37500 kVA"
+            }
+          ]
+        },
+        "hv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "66000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "66000",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "고압측 정격전압: 66 kV"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "고압측 정격전압: 66000 V"
+            }
+          ]
+        },
+        "lv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "6900",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "6900",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "저압측 정격전압: 6.9 kV"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "저압측 정격전압: 6900 V"
+            }
+          ]
+        },
+        "frequency": {
+          "status": "MATCH",
+          "expected": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            }
+          ]
+        },
+        "phases": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "상수: 3상"
+            }
+          ]
+        },
+        "vector_group": {
+          "status": "MATCH",
+          "expected": {
+            "value": "Dyn11",
+            "unit": ""
+          },
+          "actual": {
+            "value": "Dyn11",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "결선기호: Dyn11"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "결선기호: Dyn11"
+            }
+          ]
+        },
+        "cooling_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "actual": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            }
+          ]
+        },
+        "fan_supply_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "240",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "240",
+            "unit": "V"
+          },
+          "rationale": "승인 표기가 있는 AMD-F01의 대체 요구사항과 인계값을 V 기준으로 정규화하면 같다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F01",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 240 V"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 240 V"
+            }
+          ]
+        },
+        "tap_changer_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "탭절환기 방식: DETC"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "탭절환기 방식: 무전압 탭절환기"
+            }
+          ]
+        },
+        "installation_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "actual": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F01",
+              "page": 1,
+              "quote": "설치 구분: 옥외형"
+            },
+            {
+              "document_id": "HANDOFF-F01",
+              "page": 1,
+              "quote": "설치 구분: OUTDOOR"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "F02",
+      "customer_status": "MATCH",
+      "fields": {
+        "rated_power": {
+          "status": "MATCH",
+          "expected": {
+            "value": "18750",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "18750",
+            "unit": "kVA"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 kVA로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "정격용량: 18.75 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "정격용량: 18750 kVA"
+            }
+          ]
+        },
+        "hv_voltage": {
+          "status": "MISMATCH",
+          "expected": {
+            "value": "132000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "110000",
+            "unit": "V"
+          },
+          "rationale": "변경 통지가 요구 전압을 132000 V로 대체했으나 인계서는 110000 V를 명시한다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F02",
+              "page": 1,
+              "quote": "고압측 정격전압: 132 kV"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "고압측 정격전압: 110000 V"
+            }
+          ]
+        },
+        "lv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "6600",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "6600",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "저압측 정격전압: 6.6 kV"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "저압측 정격전압: 6600 V"
+            }
+          ]
+        },
+        "frequency": {
+          "status": "MATCH",
+          "expected": {
+            "value": "50",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "50",
+            "unit": "Hz"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "정격주파수: 50 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "정격주파수: 50 Hz"
+            }
+          ]
+        },
+        "phases": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "상수: 3상"
+            }
+          ]
+        },
+        "vector_group": {
+          "status": "MATCH",
+          "expected": {
+            "value": "Dyn1",
+            "unit": ""
+          },
+          "actual": {
+            "value": "Dyn1",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "결선기호: Dyn1"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "결선기호: Dyn1"
+            }
+          ]
+        },
+        "cooling_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "ONAN",
+            "unit": ""
+          },
+          "actual": {
+            "value": "ONAN",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "냉각방식: ONAN"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "냉각방식: ONAN"
+            }
+          ]
+        },
+        "fan_supply_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "415",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "415",
+            "unit": "V"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 415 V"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 415 V"
+            }
+          ]
+        },
+        "tap_changer_type": {
+          "status": "MISMATCH",
+          "expected": {
+            "value": "OLTC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "rationale": "변경 통지는 OLTC를 요구하지만 인계서의 무전압 탭절환기는 DETC이므로 불일치한다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F02",
+              "page": 1,
+              "quote": "탭절환기 방식: OLTC"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "탭절환기 방식: 무전압 탭절환기"
+            }
+          ]
+        },
+        "installation_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "옥내형",
+            "unit": ""
+          },
+          "actual": {
+            "value": "옥내형",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F02",
+              "page": 1,
+              "quote": "설치 구분: 옥내형"
+            },
+            {
+              "document_id": "HANDOFF-F02",
+              "page": 1,
+              "quote": "설치 구분: INDOOR"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "F03",
+      "customer_status": "MATCH",
+      "fields": {
+        "rated_power": {
+          "status": "MATCH",
+          "expected": {
+            "value": "27000",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "27000",
+            "unit": "kVA"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 kVA로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "정격용량: 27 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "정격용량: 27000 kVA"
+            }
+          ]
+        },
+        "hv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "77000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "77000",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "고압측 정격전압: 77 kV"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "고압측 정격전압: 77000 V"
+            }
+          ]
+        },
+        "lv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "13800",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "13800",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "저압측 정격전압: 13.8 kV"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "저압측 정격전압: 13800 V"
+            }
+          ]
+        },
+        "frequency": {
+          "status": "MATCH",
+          "expected": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            }
+          ]
+        },
+        "phases": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "상수: 3상"
+            }
+          ]
+        },
+        "vector_group": {
+          "status": "MATCH",
+          "expected": {
+            "value": "YNd11",
+            "unit": ""
+          },
+          "actual": {
+            "value": "YNd11",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "결선기호: YNd11"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "결선기호: YNd11"
+            }
+          ]
+        },
+        "cooling_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "OFAF",
+            "unit": ""
+          },
+          "actual": {
+            "value": "OFAF",
+            "unit": ""
+          },
+          "rationale": "승인 표기가 있는 AMD-F03의 대체 요구사항과 인계값을 지원 범주 기준으로 정규화하면 같다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F03",
+              "page": 1,
+              "quote": "냉각방식: OFAF"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "냉각방식: OFAF"
+            }
+          ]
+        },
+        "fan_supply_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서의 냉각팬 전원전압은 460 V이나 인계서 1페이지에 해당 항목과 값이 없다. 텍스트 AI 경로에서는 이를 NEEDS_REVIEW로 판정하며 MISSING으로 분류하지 않는다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 460 V"
+            }
+          ],
+          "authored_requirement": {
+            "value": "460",
+            "unit": "V"
+          },
+          "authored_handoff": null,
+          "missing_reason": "HANDOFF-F03 1페이지 전체에 냉각팬 전원전압 항목 및 값이 없다."
+        },
+        "tap_changer_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "OLTC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "OLTC",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "탭절환기 방식: OLTC"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "탭절환기 방식: 부하시 탭절환기"
+            }
+          ]
+        },
+        "installation_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "요구사항은 INDOOR이나 인계서가 설치 구분을 미확정으로 명시해 지원 범주의 확정값을 선택할 수 없다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F03",
+              "page": 1,
+              "quote": "설치 구분: 옥내형"
+            },
+            {
+              "document_id": "HANDOFF-F03",
+              "page": 1,
+              "quote": "설치 구분: 미확정"
+            }
+          ],
+          "authored_requirement": {
+            "value": "옥내형",
+            "unit": ""
+          },
+          "authored_handoff": null,
+          "unresolved_reason": "HANDOFF-F03 1페이지에 '설치 구분: 미확정'이라고 적혀 있다."
+        }
+      }
+    },
+    {
+      "case_id": "F04",
+      "customer_status": "MATCH",
+      "fields": {
+        "rated_power": {
+          "status": "MATCH",
+          "expected": {
+            "value": "31500",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "31500",
+            "unit": "kVA"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 kVA로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "정격용량: 31.5 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "정격용량: 31500 kVA"
+            }
+          ]
+        },
+        "hv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "154000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "154000",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "고압측 정격전압: 154 kV"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "고압측 정격전압: 154000 V"
+            }
+          ]
+        },
+        "lv_voltage": {
+          "status": "MATCH",
+          "expected": {
+            "value": "22900",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "22900",
+            "unit": "V"
+          },
+          "rationale": "사양서와 인계서의 단위 표기를 V로 환산하면 같은 값이다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "저압측 정격전압: 22.9 kV"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "저압측 정격전압: 22900 V"
+            }
+          ]
+        },
+        "frequency": {
+          "status": "MATCH",
+          "expected": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            }
+          ]
+        },
+        "phases": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "상수: 3상"
+            }
+          ]
+        },
+        "vector_group": {
+          "status": "MATCH",
+          "expected": {
+            "value": "Yyn0",
+            "unit": ""
+          },
+          "actual": {
+            "value": "Yyn0",
+            "unit": ""
+          },
+          "rationale": "사양서의 명시값과 인계서의 명시값이 같은 요구사항을 나타낸다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "결선기호: Yyn0"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "결선기호: Yyn0"
+            }
+          ]
+        },
+        "cooling_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "actual": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "rationale": "승인 표기가 있는 AMD-F04의 대체 요구사항과 인계값을 지원 범주 기준으로 정규화하면 같다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F04",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            }
+          ]
+        },
+        "fan_supply_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "인계서에 동일한 냉각팬 전원전압 항목이 400 V와 440 V로 각각 적혀 있다. 두 리터럴 중 하나를 선택할 근거가 없으므로 이 항목만 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 400 V"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 400 V"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 440 V"
+            }
+          ],
+          "authored_requirement": {
+            "value": "400",
+            "unit": "V"
+          },
+          "authored_handoff_candidates": [
+            {
+              "value": "400",
+              "unit": "V"
+            },
+            {
+              "value": "440",
+              "unit": "V"
+            }
+          ]
+        },
+        "tap_changer_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "탭절환기 방식: DETC"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "탭절환기 방식: 무전압 탭절환기"
+            }
+          ]
+        },
+        "installation_type": {
+          "status": "MATCH",
+          "expected": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "actual": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "rationale": "사양서와 인계서의 한국어·영문 표기는 같은 지원 범주에 해당한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F04",
+              "page": 1,
+              "quote": "설치 구분: 옥외형"
+            },
+            {
+              "document_id": "HANDOFF-F04",
+              "page": 1,
+              "quote": "설치 구분: OUTDOOR"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "F05",
+      "customer_status": "MISMATCH",
+      "fields": {
+        "rated_power": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "정격용량: 50 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "정격용량: 50000 kVA"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "50000",
+            "unit": "kVA"
+          },
+          "authored_handoff": {
+            "value": "50000",
+            "unit": "kVA"
+          }
+        },
+        "hv_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고압측 정격전압: 161 kV"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고압측 정격전압: 161000 V"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "161000",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "161000",
+            "unit": "V"
+          }
+        },
+        "lv_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "저압측 정격전압: 34.5 kV"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "저압측 정격전압: 34500 V"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "34500",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "34500",
+            "unit": "V"
+          }
+        },
+        "frequency": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "정격주파수: 60 Hz"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "authored_handoff": {
+            "value": "60",
+            "unit": "Hz"
+          }
+        },
+        "phases": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "3",
+            "unit": "count"
+          },
+          "authored_handoff": {
+            "value": "3",
+            "unit": "count"
+          }
+        },
+        "vector_group": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "결선기호: Yd11"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "결선기호: Yd11"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "Yd11",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "Yd11",
+            "unit": ""
+          }
+        },
+        "cooling_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "냉각방식: OFAF"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "냉각방식: OFAF"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "OFAF",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "OFAF",
+            "unit": ""
+          }
+        },
+        "fan_supply_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 208 V"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 208 V"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "208",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "208",
+            "unit": "V"
+          }
+        },
+        "tap_changer_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "탭절환기 방식: OLTC"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "탭절환기 방식: 부하시 탭절환기"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "OLTC",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "OLTC",
+            "unit": ""
+          }
+        },
+        "installation_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "사양서·변경 통지의 한국전력공사/KEPCO와 인계서의 SK하이닉스는 서로 다른 고객이다. 기술값이 같아도 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "설치 구분: 옥내형"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "설치 구분: INDOOR"
+            },
+            {
+              "document_id": "SPEC-F05",
+              "page": 1,
+              "quote": "고객사(발주처) 한국전력공사"
+            },
+            {
+              "document_id": "AMD-F05",
+              "page": 1,
+              "quote": "고객사(발주처) KEPCO"
+            },
+            {
+              "document_id": "HANDOFF-F05",
+              "page": 1,
+              "quote": "고객사(발주처) SK하이닉스"
+            }
+          ],
+          "authored_requirement": {
+            "value": "옥내형",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "옥내형",
+            "unit": ""
+          }
+        }
+      }
+    },
+    {
+      "case_id": "F06",
+      "customer_status": "NEEDS_REVIEW",
+      "fields": {
+        "rated_power": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "정격용량: 22.5 MVA"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "정격용량: 22500 kVA"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "22500",
+            "unit": "kVA"
+          },
+          "authored_handoff": {
+            "value": "22500",
+            "unit": "kVA"
+          }
+        },
+        "hv_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고압측 정격전압: 115 kV"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고압측 정격전압: 115000 V"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "115000",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "115000",
+            "unit": "V"
+          }
+        },
+        "lv_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "저압측 정격전압: 11 kV"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "저압측 정격전압: 11000 V"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "11000",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "11000",
+            "unit": "V"
+          }
+        },
+        "frequency": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "정격주파수: 50 Hz"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "정격주파수: 50 Hz"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "50",
+            "unit": "Hz"
+          },
+          "authored_handoff": {
+            "value": "50",
+            "unit": "Hz"
+          }
+        },
+        "phases": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "상수: 3상"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "3",
+            "unit": "count"
+          },
+          "authored_handoff": {
+            "value": "3",
+            "unit": "count"
+          }
+        },
+        "vector_group": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "결선기호: YNyn0"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "결선기호: YNyn0"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "YNyn0",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "YNyn0",
+            "unit": ""
+          }
+        },
+        "cooling_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "냉각방식: ONAF"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "ONAF",
+            "unit": ""
+          }
+        },
+        "fan_supply_voltage": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 240 V"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "냉각팬 전원전압: 240 V"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "240",
+            "unit": "V"
+          },
+          "authored_handoff": {
+            "value": "240",
+            "unit": "V"
+          }
+        },
+        "tap_changer_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "탭절환기 방식: DETC"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "탭절환기 방식: 무전압 탭절환기"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "DETC",
+            "unit": ""
+          }
+        },
+        "installation_type": {
+          "status": "NEEDS_REVIEW",
+          "expected": null,
+          "actual": null,
+          "rationale": "세 문서의 NGET는 모두 같지만 허용된 고객사 별칭이 아니다. National Grid로 추정하지 않고 고객 식별 관문에서 전체 항목을 보류한다.",
+          "evidence": [
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "설치 구분: 옥외형"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "설치 구분: OUTDOOR"
+            },
+            {
+              "document_id": "SPEC-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "AMD-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            },
+            {
+              "document_id": "HANDOFF-F06",
+              "page": 1,
+              "quote": "고객사(발주처) NGET"
+            }
+          ],
+          "authored_requirement": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "authored_handoff": {
+            "value": "옥외형",
+            "unit": ""
+          }
+        }
+      }
+    }
+  ]
+}

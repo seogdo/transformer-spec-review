@@ -1,0 +1,106 @@
+{
+  "synthetic_only": true,
+  "schema_version": "varied-text-pdf-3",
+  "notice": "가상 선언과 명시 메타데이터가 있는 다양한 본문 양식입니다. 실제 기업 자료가 아니며 일반 PDF/OCR 지원을 뜻하지 않습니다. 고객사 표기는 식별 기능 시험용이며 실제 거래를 뜻하지 않습니다.",
+  "cases": [
+    {
+      "case_id": "V01",
+      "documents": [
+        {
+          "document_id": "SPEC-V01",
+          "role": "customer_spec",
+          "customer_name": "한국전력",
+          "path": "output/pdf/varied/V01/01_customer_spec.pdf",
+          "page_count": 2
+        },
+        {
+          "document_id": "AMD-V01",
+          "role": "amendment",
+          "customer_name": "KEPCO",
+          "path": "output/pdf/varied/V01/02_amendment.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-V01",
+          "role": "handoff",
+          "customer_name": "한전",
+          "path": "output/pdf/varied/V01/03_handoff.pdf",
+          "page_count": 2
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-V01",
+        "approved_amendment_ids": [
+          "AMD-V01"
+        ],
+        "handoff_id": "HANDOFF-V01"
+      }
+    },
+    {
+      "case_id": "V02",
+      "documents": [
+        {
+          "document_id": "SPEC-V02",
+          "role": "customer_spec",
+          "customer_name": "한국전력",
+          "path": "output/pdf/varied/V02/01_customer_spec.pdf",
+          "page_count": 2
+        },
+        {
+          "document_id": "AMD-V02",
+          "role": "amendment",
+          "customer_name": "KEPCO",
+          "path": "output/pdf/varied/V02/02_amendment.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-V02",
+          "role": "handoff",
+          "customer_name": "한전",
+          "path": "output/pdf/varied/V02/03_handoff.pdf",
+          "page_count": 2
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-V02",
+        "approved_amendment_ids": [
+          "AMD-V02"
+        ],
+        "handoff_id": "HANDOFF-V02"
+      }
+    },
+    {
+      "case_id": "V03",
+      "documents": [
+        {
+          "document_id": "SPEC-V03",
+          "role": "customer_spec",
+          "customer_name": "한국전력",
+          "path": "output/pdf/varied/V03/01_customer_spec.pdf",
+          "page_count": 2
+        },
+        {
+          "document_id": "AMD-V03",
+          "role": "amendment",
+          "customer_name": "KEPCO",
+          "path": "output/pdf/varied/V03/02_amendment.pdf",
+          "page_count": 1
+        },
+        {
+          "document_id": "HANDOFF-V03",
+          "role": "handoff",
+          "customer_name": "한전",
+          "path": "output/pdf/varied/V03/03_handoff.pdf",
+          "page_count": 2
+        }
+      ],
+      "review_policy": {
+        "base_id": "SPEC-V03",
+        "approved_amendment_ids": [
+          "AMD-V03"
+        ],
+        "handoff_id": "HANDOFF-V03"
+      }
+    }
+  ]
+}
