@@ -1,0 +1,634 @@
+{
+  "schema_version": "evidence-before-after-v1",
+  "measured_at": "2026-10-20T11:10:53.353591+00:00",
+  "case_id": "F04",
+  "passed": true,
+  "scope": "Synthetic fixed-input evidence presentation, not AI quality or speed.",
+  "before_origin": {
+    "kind": "historical_saved_baseline",
+    "old_implementation_rerun": false,
+    "path": "reports/fresh-evaluation-20261020T134647-008a1935.result.json",
+    "public_copy_sha256": "af07c46697bad801d2a331afe5793e1426686ef71d81a05ad28c61639d9a1d30",
+    "historical_run_id": "20261020T134647-008a1935",
+    "historical_case_started_at": "2026-10-20T13:49:24.073233+09:00",
+    "public_copy_notice": {
+      "kind": "redacted_public_copy",
+      "source_filename": "fresh-evaluation-20261020T134647-008a1935.result.json",
+      "redactions": {
+        "local_home": "<LOCAL_HOME>",
+        "project_root": "<PROJECT_ROOT>",
+        "temporary_directory": "<TEMP_DIR>"
+      },
+      "scope": "Local absolute paths are replaced for publication. Synthetic inputs, recorded model responses, and recorded outcomes are retained.",
+      "integrity_note": "This redacted copy is not byte-identical to the original report. Historical hashes describe original local artifacts, not this public copy; the original freeze bundle is not included.",
+      "usage_note": "Historical synthetic development evidence and captured-response regression input, not an independent holdout or a new live model run."
+    }
+  },
+  "after_origin": {
+    "kind": "current_code_captured_response_replay",
+    "transport": "in_process_ASGI_TestClient",
+    "live_model_run": false,
+    "manual_answers_used_for_replay_or_comparison": false,
+    "runtime": {
+      "python": "3.11.15",
+      "packages": {
+        "fastapi": "0.150.0",
+        "starlette": "1.9.0",
+        "httpx": "0.28.1",
+        "pypdf": "6.10.0",
+        "python-multipart": "0.0.32"
+      }
+    },
+    "captured_responses_sha256": "9d87d7517c86729b3b15d10b0678a210c266b47ed87f1973dc1af8b295c2c0b1",
+    "code_sha256_before": {
+      "scripts/measure_evidence_before_after.py": "c7a488eb1be63eb7a0ad7bc08bb2046363fc8fb27d6a87343142744af6b07386",
+      "src/handoff_review/__init__.py": "5848576165ebbb6752eb24c681820734f360352b61e3475070733d6343a8a202",
+      "src/handoff_review/__main__.py": "c8eb854d63888175156cce457236c7a2aad665f7acfdd51cfd02791f57316300",
+      "src/handoff_review/contracts.py": "b9f4a39d5124ba05e76867dbbc85c9986af7711743149063aa921fb761458654",
+      "src/handoff_review/customers.py": "38f62a883fb416aec361a1946e293f250b22604ba6e81908304832476df25e37",
+      "src/handoff_review/explanation.py": "c0b3296683c3142d668e19f81b0cec0163b05c78bd2f175e83d65c5844f3c0f4",
+      "src/handoff_review/extraction_agent.py": "69b854827bb652e7f1b1b7f2f1ca56f2ce5b1a86543cd9c367a533469e8fb538",
+      "src/handoff_review/pdf_ingest.py": "664f5cf165b27276128b8bf849702e19773c999de9290d91f0ee2b5028dd23f7",
+      "src/handoff_review/pdf_worker.py": "f62fce071c58e804d9757a8a8541a5a70b20ce69d2a8cbbbddecf9b4920e9575",
+      "src/handoff_review/report.py": "7ca26ae1dcd49a61fa2fdb538b1d9ec638f83950db75a4be3a5310e0578dc3ba",
+      "src/handoff_review/review.py": "ea05c7cc3926a1a02537b31533a4d183b8e50ac30e46d80cfdf79d99abf1b1ed",
+      "src/handoff_review/text_pdf.py": "f19cbcba77d51df0fdd5e33102a9ab03251a822b4c7a9fba33e49ae10a5b120e",
+      "src/handoff_review/web_app.py": "c3cdf581651eef1788ee8dc0a1e82c16f0812684c20f7a788794121c41677b9d"
+    },
+    "code_sha256_after": {
+      "scripts/measure_evidence_before_after.py": "c7a488eb1be63eb7a0ad7bc08bb2046363fc8fb27d6a87343142744af6b07386",
+      "src/handoff_review/__init__.py": "5848576165ebbb6752eb24c681820734f360352b61e3475070733d6343a8a202",
+      "src/handoff_review/__main__.py": "c8eb854d63888175156cce457236c7a2aad665f7acfdd51cfd02791f57316300",
+      "src/handoff_review/contracts.py": "b9f4a39d5124ba05e76867dbbc85c9986af7711743149063aa921fb761458654",
+      "src/handoff_review/customers.py": "38f62a883fb416aec361a1946e293f250b22604ba6e81908304832476df25e37",
+      "src/handoff_review/explanation.py": "c0b3296683c3142d668e19f81b0cec0163b05c78bd2f175e83d65c5844f3c0f4",
+      "src/handoff_review/extraction_agent.py": "69b854827bb652e7f1b1b7f2f1ca56f2ce5b1a86543cd9c367a533469e8fb538",
+      "src/handoff_review/pdf_ingest.py": "664f5cf165b27276128b8bf849702e19773c999de9290d91f0ee2b5028dd23f7",
+      "src/handoff_review/pdf_worker.py": "f62fce071c58e804d9757a8a8541a5a70b20ce69d2a8cbbbddecf9b4920e9575",
+      "src/handoff_review/report.py": "7ca26ae1dcd49a61fa2fdb538b1d9ec638f83950db75a4be3a5310e0578dc3ba",
+      "src/handoff_review/review.py": "ea05c7cc3926a1a02537b31533a4d183b8e50ac30e46d80cfdf79d99abf1b1ed",
+      "src/handoff_review/text_pdf.py": "f19cbcba77d51df0fdd5e33102a9ab03251a822b4c7a9fba33e49ae10a5b120e",
+      "src/handoff_review/web_app.py": "c3cdf581651eef1788ee8dc0a1e82c16f0812684c20f7a788794121c41677b9d"
+    }
+  },
+  "input_identity": {
+    "historical_pdf_sha256": {
+      "SPEC-F04": "f65fc762ee14966ccf00ccc71973bc4f72b733c4ae2da25a8b9609d42512d175",
+      "AMD-F04": "bb3f6b39bf77d43438c911cd581313a0cb2a84629fdf887dea1d65209af93d34",
+      "HANDOFF-F04": "87243920cbf9ac0ebcb7b883f0bbb952bc4f655218f480449a0a3161ff7a79eb"
+    },
+    "current_pdfs_match_historical_hashes": true,
+    "files_sha256_before": {
+      "output/pdf/fresh-evaluation/F04/AMD-F04.pdf": "bb3f6b39bf77d43438c911cd581313a0cb2a84629fdf887dea1d65209af93d34",
+      "output/pdf/fresh-evaluation/F04/HANDOFF-F04.pdf": "87243920cbf9ac0ebcb7b883f0bbb952bc4f655218f480449a0a3161ff7a79eb",
+      "output/pdf/fresh-evaluation/F04/SPEC-F04.pdf": "f65fc762ee14966ccf00ccc71973bc4f72b733c4ae2da25a8b9609d42512d175",
+      "reports/fresh-evaluation-20261020T134647-008a1935.result.json": "af07c46697bad801d2a331afe5793e1426686ef71d81a05ad28c61639d9a1d30"
+    },
+    "files_sha256_after": {
+      "output/pdf/fresh-evaluation/F04/AMD-F04.pdf": "bb3f6b39bf77d43438c911cd581313a0cb2a84629fdf887dea1d65209af93d34",
+      "output/pdf/fresh-evaluation/F04/HANDOFF-F04.pdf": "87243920cbf9ac0ebcb7b883f0bbb952bc4f655218f480449a0a3161ff7a79eb",
+      "output/pdf/fresh-evaluation/F04/SPEC-F04.pdf": "f65fc762ee14966ccf00ccc71973bc4f72b733c4ae2da25a8b9609d42512d175",
+      "reports/fresh-evaluation-20261020T134647-008a1935.result.json": "af07c46697bad801d2a331afe5793e1426686ef71d81a05ad28c61639d9a1d30"
+    },
+    "policy": {
+      "base_id": "SPEC-F04",
+      "handoff_id": "HANDOFF-F04",
+      "approved_amendment_ids": [
+        "AMD-F04"
+      ]
+    }
+  },
+  "checks": {
+    "all_ten_statuses_unchanged": true,
+    "all_ten_normalized_value_pairs_unchanged": true,
+    "summary_unchanged": true,
+    "policy_unchanged": true,
+    "fan_stays_held_with_null_actual": true,
+    "handoff_distinct_sources_one_to_two": true,
+    "both_original_conflict_quotes_visible_after": true,
+    "evidence_completeness_true_to_false": true,
+    "after_evidence_explicitly_requires_review": true,
+    "input_files_unchanged": true,
+    "current_code_unchanged_during_replay": true,
+    "captured_response_objects_unchanged": true,
+    "zero_actual_model_calls": true,
+    "zero_network_connection_attempts": true,
+    "two_captured_response_replays": true,
+    "original_metadata_preserved": true,
+    "separate_derived_upload": true,
+    "job_bound_to_original_upload": true,
+    "original_and_derived_pdf_bytes_preserved": true,
+    "export_preserved": true,
+    "all_displayed_quotes_bound_to_original_pages": true,
+    "temporary_store_removed": true
+  },
+  "comparison": {
+    "checks": {
+      "all_ten_statuses_unchanged": true,
+      "all_ten_normalized_value_pairs_unchanged": true,
+      "summary_unchanged": true,
+      "policy_unchanged": true,
+      "fan_stays_held_with_null_actual": true,
+      "handoff_distinct_sources_one_to_two": true,
+      "both_original_conflict_quotes_visible_after": true,
+      "evidence_completeness_true_to_false": true,
+      "after_evidence_explicitly_requires_review": true
+    },
+    "passed": true,
+    "status_unchanged_count": 10,
+    "normalized_value_pairs_unchanged_count": 10,
+    "field_count": 10,
+    "fan_before": {
+      "handoff_unique_source_count": 1,
+      "handoff_sources": [
+        {
+          "document_id": "HANDOFF-F04",
+          "page": 1,
+          "quote": "냉각팬 전원전압: 400 V"
+        }
+      ],
+      "conflict_quotes_displayed": [
+        "냉각팬 전원전압: 400 V"
+      ],
+      "conflict_quote_kind_count": 1,
+      "evidence_complete": true,
+      "evidence_check": null
+    },
+    "fan_after": {
+      "handoff_unique_source_count": 2,
+      "handoff_sources": [
+        {
+          "document_id": "HANDOFF-F04",
+          "page": 1,
+          "quote": "냉각팬 전원전압: 400 V"
+        },
+        {
+          "document_id": "HANDOFF-F04",
+          "page": 1,
+          "quote": "냉각팬 전원전압: 440 V"
+        }
+      ],
+      "conflict_quotes_displayed": [
+        "냉각팬 전원전압: 400 V",
+        "냉각팬 전원전압: 440 V"
+      ],
+      "conflict_quote_kind_count": 2,
+      "evidence_complete": false,
+      "evidence_check": {
+        "version": "original-page-evidence-v2",
+        "status": "review_required",
+        "linked_source_count": 3,
+        "invalid_source_count": 0,
+        "scope": "original_page_binding_not_semantic_completeness"
+      }
+    },
+    "field_comparisons": [
+      {
+        "field": "rated_power",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "31500",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "31500",
+            "unit": "kVA"
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "31500",
+            "unit": "kVA"
+          },
+          "actual": {
+            "value": "31500",
+            "unit": "kVA"
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "hv_voltage",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "154000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "154000",
+            "unit": "V"
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "154000",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "154000",
+            "unit": "V"
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "lv_voltage",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "22900",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "22900",
+            "unit": "V"
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "22900",
+            "unit": "V"
+          },
+          "actual": {
+            "value": "22900",
+            "unit": "V"
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "frequency",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "60",
+            "unit": "Hz"
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "60",
+            "unit": "Hz"
+          },
+          "actual": {
+            "value": "60",
+            "unit": "Hz"
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "phases",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "3",
+            "unit": "count"
+          },
+          "actual": {
+            "value": "3",
+            "unit": "count"
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "vector_group",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "Yyn0",
+            "unit": ""
+          },
+          "actual": {
+            "value": "Yyn0",
+            "unit": ""
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "Yyn0",
+            "unit": ""
+          },
+          "actual": {
+            "value": "Yyn0",
+            "unit": ""
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "cooling_type",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "actual": {
+            "value": "ONAF",
+            "unit": ""
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "ONAF",
+            "unit": ""
+          },
+          "actual": {
+            "value": "ONAF",
+            "unit": ""
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "fan_supply_voltage",
+        "before": {
+          "status": "NEEDS_REVIEW",
+          "expected": {
+            "value": "400",
+            "unit": "V"
+          },
+          "actual": null
+        },
+        "after": {
+          "status": "NEEDS_REVIEW",
+          "expected": {
+            "value": "400",
+            "unit": "V"
+          },
+          "actual": null
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "tap_changer_type",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": ""
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "DETC",
+            "unit": ""
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": ""
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      },
+      {
+        "field": "installation_type",
+        "before": {
+          "status": "MATCH",
+          "expected": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "actual": {
+            "value": "옥외형",
+            "unit": ""
+          }
+        },
+        "after": {
+          "status": "MATCH",
+          "expected": {
+            "value": "옥외형",
+            "unit": ""
+          },
+          "actual": {
+            "value": "옥외형",
+            "unit": ""
+          }
+        },
+        "status_unchanged": true,
+        "values_unchanged": true
+      }
+    ]
+  },
+  "replay_observations": {
+    "actual_model_transport_calls": 0,
+    "network_connection_attempts": 0,
+    "captured_response_replay_calls": 2,
+    "captured_responses_supplied_unchanged": true,
+    "supplied_response_sha256": [
+      "0db20adc8733952e0c2bb5853d5c45d47097e852e2b6cc875500bbe77f622ed5",
+      "d57750abe45d6a3092ff350d03566618944c233aa4add6f34b7ce0086f48932e"
+    ],
+    "original_upload_metadata_unchanged": true,
+    "derived_upload_is_separate": true,
+    "job_source_upload_is_original": true,
+    "original_and_derived_pdf_checks": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "review_export_matches": true,
+    "source_page_checks": [
+      {
+        "field": "rated_power",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "정격용량: 31.5 MVA",
+        "present_in_original_page": true
+      },
+      {
+        "field": "rated_power",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "정격용량: 31500 kVA",
+        "present_in_original_page": true
+      },
+      {
+        "field": "hv_voltage",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "고압측 정격전압: 154 kV",
+        "present_in_original_page": true
+      },
+      {
+        "field": "hv_voltage",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "고압측 정격전압: 154000 V",
+        "present_in_original_page": true
+      },
+      {
+        "field": "lv_voltage",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "저압측 정격전압: 22.9 kV",
+        "present_in_original_page": true
+      },
+      {
+        "field": "lv_voltage",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "저압측 정격전압: 22900 V",
+        "present_in_original_page": true
+      },
+      {
+        "field": "frequency",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "정격주파수: 60 Hz",
+        "present_in_original_page": true
+      },
+      {
+        "field": "frequency",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "정격주파수: 60 Hz",
+        "present_in_original_page": true
+      },
+      {
+        "field": "phases",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "상수: 3상",
+        "present_in_original_page": true
+      },
+      {
+        "field": "phases",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "상수: 3상",
+        "present_in_original_page": true
+      },
+      {
+        "field": "vector_group",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "결선기호: Yyn0",
+        "present_in_original_page": true
+      },
+      {
+        "field": "vector_group",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "결선기호: Yyn0",
+        "present_in_original_page": true
+      },
+      {
+        "field": "cooling_type",
+        "document_id": "AMD-F04",
+        "page": 1,
+        "quote": "냉각방식: ONAF",
+        "present_in_original_page": true
+      },
+      {
+        "field": "cooling_type",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "냉각방식: ONAF",
+        "present_in_original_page": true
+      },
+      {
+        "field": "fan_supply_voltage",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "냉각팬 전원전압: 400 V",
+        "present_in_original_page": true
+      },
+      {
+        "field": "fan_supply_voltage",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "냉각팬 전원전압: 400 V",
+        "present_in_original_page": true
+      },
+      {
+        "field": "fan_supply_voltage",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "냉각팬 전원전압: 440 V",
+        "present_in_original_page": true
+      },
+      {
+        "field": "tap_changer_type",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "탭절환기 방식: DETC",
+        "present_in_original_page": true
+      },
+      {
+        "field": "tap_changer_type",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "탭절환기 방식: 무전압 탭절환기",
+        "present_in_original_page": true
+      },
+      {
+        "field": "installation_type",
+        "document_id": "SPEC-F04",
+        "page": 1,
+        "quote": "설치 구분: 옥외형",
+        "present_in_original_page": true
+      },
+      {
+        "field": "installation_type",
+        "document_id": "HANDOFF-F04",
+        "page": 1,
+        "quote": "설치 구분: OUTDOOR",
+        "present_in_original_page": true
+      }
+    ],
+    "temporary_store_removed": true
+  },
+  "limitations": [
+    "Before is an archived observation; only after is executed now. This is not two historical code versions rerun side by side.",
+    "Both conflicting values already existed in the captured model response. The measured change is evidence presentation, not better AI extraction.",
+    "No AI accuracy, inference speed, task-time saving, production safety or course bonus eligibility is established.",
+    "One authored synthetic case is not an independent evaluation or a real-company document sample.",
+    "The redacted public report hash is not the original historical report or freeze hash.",
+    "Quote-to-page checks establish literal presence, not semantic completeness or engineering validity.",
+    "Replay request payloads are generated by current code; only PDF bytes, captured responses and amendment policy are held fixed.",
+    "Temporary records and their local UI links are discarded; historical records are never rewritten."
+  ]
+}

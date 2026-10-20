@@ -14,9 +14,10 @@ tmp/
 uploads/
 reports/runtime/
 *.log
-# Keep only the privacy-filtered regression replay fixture in public Git.
+# Keep only reviewed, privacy-filtered regression evidence in public Git.
 reports/*
 !reports/fresh-evaluation-20261020T134647-008a1935.result.json
+!reports/evidence-before-after-20261020T111053Z-4e8705ae.json
 *.pem
 *.key
 *.p12
