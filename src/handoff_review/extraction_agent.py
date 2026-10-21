@@ -1,4 +1,4 @@
-"""Two-call local tool/RAG extraction with evidence validation and no value fallback.
+"""Two-call tool/RAG extraction with evidence validation and no value fallback.
 
 The first model call chooses document/field search queries. The application then
 executes a lexical keyword search over the uploaded pages. The second model
@@ -24,6 +24,7 @@ from typing import Any, Callable
 
 from .contracts import FIELD_KEYS, FIELD_SPECS, UncertainValue, canonical_enum_value, normalize
 from .explanation import DEFAULT_URL, MODEL, PlanRejected, _endpoint, _strict_json
+from .llm_backend import AIConfig, execution_info, get_ai_config, openai_request
 
 TOTAL_TIMEOUT = 90.0
 MAX_RESPONSE_BYTES = 256 * 1024
@@ -570,27 +571,34 @@ def _validate_proposal(proposal: dict[str, Any], item: dict[str, Any], hits: lis
     return None
 
 
-def extract_upload(documents: list[dict[str, Any]], request_fn: Callable[[dict[str, Any], float], dict[str, Any]] | None = None) -> dict[str, Any]:
+def extract_upload(documents: list[dict[str, Any]], request_fn: Callable[[dict[str, Any], float], dict[str, Any]] | None = None, *, ai_config: AIConfig | None = None) -> dict[str, Any]:
     """Run search planning → lexical tool → value extraction, in at most 2 calls.
 
     ``request_fn(payload, timeout_seconds)`` may be injected by offline tests;
     it returns the parsed structured model JSON (not an Ollama HTTP envelope).
-    The default transport accesses only the existing loopback Ollama service.
+    Startup configuration selects loopback Ollama or the fixed OpenAI API.
+    OpenAI receives search identifiers and retrieved original-text snippets.
+    There is no retry or silent fallback to another provider.
     Returned metadata is a deep copy of the input. Every scoped field starts
     uncertain and is replaced only by a fully validated model proposal.
     """
     _validate_input(documents)
+    config = ai_config if ai_config is not None else get_ai_config()
+    method = "openai_tool_rag" if config.provider == "openai" else "local_tool_rag"
+    execution = execution_info(config, injected=request_fn is not None)
     copied = deepcopy(documents)
     index = {item["document"]["id"]: item for item in copied}
     scopes = {identifier: _scopes(item) for identifier, item in index.items()}
     for identifier, item in index.items():
         item["document"]["fields"] = {field: _uncertain("AI가 검색 근거에서 검증 가능한 값을 추출하지 못했습니다.", _occurrences(item, field)) for field in scopes[identifier]}
-        item["extraction_method"] = "local_tool_rag"
+        item["extraction_method"] = method
         item["warnings"] = [warning for warning in item.get("warnings", [])
                             if not isinstance(warning, dict) or warning.get("code") != "AI_EXTRACTION_PENDING"]
     output: dict[str, Any] = {"documents": copied, "trace": [], "status": "partial", "accepted_fields": 0,
-                              "proposed_fields": 0, "warnings": [], "llm_calls": 0, "method": "local_tool_rag"}
-    request = request_fn or _local_request
+                              "proposed_fields": 0, "warnings": [], "llm_calls": 0, "method": method,
+                              "ai_execution": execution}
+    request = request_fn if request_fn is not None else (
+        (lambda payload, timeout: openai_request(config, payload, timeout)) if config.provider == "openai" else _local_request)
     deadline = time.monotonic() + TOTAL_TIMEOUT
 
     def trace(tool: str, status: str, message: str, **extra):
@@ -601,9 +609,12 @@ def extract_upload(documents: list[dict[str, Any]], request_fn: Callable[[dict[s
         if remaining <= 0 or output["llm_calls"] >= 2:
             raise TimeoutError("전체 실행 제한을 초과했습니다.")
         output["llm_calls"] += 1
-        value = request(payload, remaining)
+        execution["calls_attempted"] += 1
+        # A new payload carries the startup snapshot; never mutate global MODEL.
+        value = request({**payload, "model": config.model}, remaining)
         if time.monotonic() > deadline:
             raise TimeoutError("전체 실행 제한을 초과했습니다.")
+        execution["calls_succeeded"] += 1
         return value
 
     trace("scope_documents", "completed", "문서 메타데이터를 유지하고 비교 항목을 정했습니다. 검색은 키워드 방식이며 벡터 검색이 아닙니다.", documents=len(copied), fields=sum(map(len, scopes.values())))
@@ -685,9 +696,11 @@ def extract_upload(documents: list[dict[str, Any]], request_fn: Callable[[dict[s
         trace("extract_values", "completed", f"AI가 제안한 {len(rows)}개 값 중 {output['accepted_fields']}개를 원문과 검증했습니다.", accepted_fields=output["accepted_fields"], proposed_fields=len(rows))
     except PlanRejected:
         output["warnings"].append({"code": "INVALID_MODEL_STRUCTURE", "message": "AI가 반환한 검색·추출 구조를 검증하지 못했습니다. 모든 미확정 값은 담당자 확인으로 남깁니다."})
-        trace("local_model", "rejected", "구조가 올바르지 않은 AI 결과를 반영하지 않았습니다.")
+        trace("openai_model" if config.provider == "openai" else "local_model", "rejected", "구조가 올바르지 않은 AI 결과를 반영하지 않았습니다.")
     except (OSError, ValueError, http.client.HTTPException):
         output["status"] = "unavailable"
-        output["warnings"].append({"code": "LOCAL_AI_UNAVAILABLE", "message": "로컬 AI 연결·응답을 90초 전체 제한 안에서 확인하지 못했습니다. 모델을 자동 설치하거나 외부 API로 전환하지 않았습니다."})
-        trace("local_model", "unavailable", "로컬 AI 연결 실패 또는 제한시간 초과로 미확정 값을 담당자 확인으로 남겼습니다.")
+        label = "OpenAI API" if config.provider == "openai" else "로컬 AI"
+        output["warnings"].append({"code": "OPENAI_UNAVAILABLE" if config.provider == "openai" else "LOCAL_AI_UNAVAILABLE",
+                                   "message": f"{label} 연결·응답을 90초 전체 제한 안에서 확인하지 못했습니다. 모델을 자동 설치하거나 다른 AI 제공자로 전환하지 않았습니다."})
+        trace("openai_model" if config.provider == "openai" else "local_model", "unavailable", f"{label} 연결 실패 또는 제한시간 초과로 미확정 값을 담당자 확인으로 남겼습니다.")
     return output

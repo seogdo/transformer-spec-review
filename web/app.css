@@ -18,3 +18,7 @@
 @media(max-width:680px){.customer-check{padding:14px}.customer-record-grid{grid-template-columns:1fr}.customer-check-heading{align-items:flex-start;flex-direction:column;gap:8px}.customer-check-message,.customer-hold-note{font-size:11px}}
 .export-actions{display:flex;flex-direction:column;gap:10px;align-items:stretch;flex:0 0 auto}.export-actions .button{white-space:normal;text-align:center;min-width:180px}
 @media(max-width:680px){.export-panel{align-items:stretch;flex-direction:column}.export-actions{width:100%}.export-actions .button{width:100%;min-width:0}}
+.ai-runtime-panel { margin: 16px 0; padding: 18px 22px; background: #fff; border: 1px solid #d9e2e7; border-radius: 12px; }
+.ai-runtime-panel p { margin: 8px 0; overflow-wrap: anywhere; }
+.ai-runtime-panel .message { margin-top: 12px; }
+.saved-ai-origin { padding: 12px 16px; border-left: 3px solid #56778c; background: #edf3f6; overflow-wrap: anywhere; }

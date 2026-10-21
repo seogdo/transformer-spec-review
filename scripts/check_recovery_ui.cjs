@@ -155,6 +155,9 @@ function harness({stored = new Map(), disabledStorage = false, rejectRequestWrit
   });
   vm.runInContext(source, context, {filename: "web/app.js"});
   const run = (code) => vm.runInContext(code, context);
+  // Existing recovery cases run against a configured local backend; individual
+  // API-consent cases explicitly replace this public health snapshot.
+  run("state.health = {provider: 'ollama', model: 'test-local', configuration_ready: true, external_processing: false, model_readiness_checked: false};");
   const respond = (method, path, body, extra = {}) => queue.push({method, path, body, status: 200, ...extra});
   return {
     nodes, stored, calls, context, run, respond,
@@ -231,6 +234,89 @@ async function expectReviewSubmission(h, review, selected) {
 }
 
 async function main() {
+  await test("OpenAI health shows public configuration without claiming connectivity", async () => {
+    const h = harness();
+    h.respond("GET", "/api/health", {status: "ok", provider: "openai", model: "test-api-model", config_signature: "sig-api", configuration_ready: true, key_configured: true, external_processing: true, model_readiness_checked: false});
+    h.nodes.get("external-ai-consent").checked = true;
+    await h.run("loadHealth()");
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    assert.equal(h.nodes.get("external-ai-notice").hidden, false);
+    assert.match(h.nodes.get("ai-runtime-label").textContent, /OpenAI API.*test-api-model/);
+    assert.match(h.nodes.get("ai-runtime-detail").textContent, /값 비공개.*미검증/);
+    h.finish();
+  });
+  await test("external extraction is blocked without consent and sends the fixed header only after consent", async () => {
+    const h = harness(); h.seed();
+    h.run("state.health = {provider:'openai', model:'test-api', config_signature:'sig-api', configuration_ready:true, external_processing:true}; controls();");
+    assert.equal(h.nodes.get("extract-button").disabled, true);
+    await h.run("extractUpload()");
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.uuidCount(), 0, "No request identity is allocated before consent");
+    h.nodes.get("external-ai-consent").checked = true;
+    h.respond("POST", postPath, jobState("running"), {inspect: (call) => {
+      assert.equal(call.headers["X-AI-Consent"], "external-processing-and-cost");
+      assert.equal(call.headers["X-AI-Configuration"], "sig-api");
+    }});
+    h.respond("GET", jobPath, completed());
+    await h.run("extractUpload()");
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    h.finish();
+  });
+  await test("missing API configuration blocks extraction even with consent", async () => {
+    const h = harness(); h.seed();
+    h.run("state.health = {provider:'openai', model:'test-api', configuration_ready:false, key_configured:false, external_processing:true, configuration_error:'MISSING_OPENAI_API_KEY'}; renderAIConfig();");
+    h.nodes.get("external-ai-consent").checked = true;
+    await h.run("extractUpload()");
+    assert.equal(h.calls.length, 0);
+    assert.match(h.nodes.get("ai-runtime-detail").textContent, /키 미설정.*OPENAI_API_KEY/);
+    h.finish();
+  });
+  await test("saved external jobs resume GET only without restored consent", async () => {
+    const h = harness({stored: pendingStorage({job: true})});
+    h.run("state.health = {provider:'openai', model:'test-api', configuration_ready:true, external_processing:true};");
+    h.nodes.get("external-ai-consent").checked = true;
+    h.respond("GET", `/api/uploads/${UPLOAD}`, uploadFixture());
+    h.respond("GET", jobPath, completed());
+    await h.run("restoreState()");
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    assert.ok(h.calls.every((call) => call.method === "GET"));
+    h.finish();
+  });
+  await test("optional explanation also requires external consent and keeps stored extraction provenance", async () => {
+    const h = harness(), upload = uploadFixture(UPLOAD, false);
+    const review = savedReviewFixture(upload);
+    review.ai_execution = {provider: "ollama", model: "old-local", execution_mode: "live_request"};
+    h.context.reviewFixture = review; h.run("acceptReview(reviewFixture); state.health={provider:'openai',model:'test-api',config_signature:'sig-api',configuration_ready:true,external_processing:true};");
+    await h.run("explainReview()");
+    assert.equal(h.calls.length, 0);
+    h.nodes.get("external-ai-consent").checked = true;
+    h.respond("POST", `/api/reviews/${REVIEW}/explain`, {items: [], ai_execution: {provider:"openai", model:"test-api", execution_mode:"live_request"}}, {inspect: (call) => {
+      assert.equal(call.headers["X-AI-Consent"], "external-processing-and-cost");
+      assert.equal(call.headers["X-AI-Configuration"], "sig-api");
+    }});
+    await h.run("explainReview()");
+    assert.match(h.nodes.get("review-ai-origin").textContent, /로컬 Ollama.*old-local/);
+    assert.match(h.nodes.get("ai-note").textContent, /OpenAI API.*test-api/);
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    h.finish();
+  });
+  await test("a stale configuration rejection does not rotate the key or retry and renewed health clears consent", async () => {
+    const h = harness(); h.seed();
+    h.run("state.health={provider:'openai',model:'old-model',config_signature:'sig-old',configuration_ready:true,external_processing:true};");
+    h.nodes.get("external-ai-consent").checked = true;
+    h.respond("POST", postPath, {detail: "현재 서버 설정을 다시 확인하세요."}, {status:409});
+    await h.run("extractUpload()");
+    assert.equal(h.calls.length, 1);
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    const requestKey = h.request().key;
+    h.nodes.get("external-ai-consent").checked = true;
+    h.respond("GET", "/api/health", {status:"ok",provider:"openai",model:"new-model",config_signature:"sig-new",configuration_ready:true,external_processing:true});
+    await h.run("loadHealth()");
+    assert.equal(h.nodes.get("external-ai-consent").checked, false);
+    assert.equal(h.request().key, requestKey);
+    assert.equal(h.calls.length, 2);
+    h.finish();
+  });
   await test("restored empty amendment selection stays empty on explicit re-review", async () => {
     const upload = uploadFixture(UPLOAD, false), review = savedReviewFixture(upload, []);
     const h = await restoreReviewFixture(upload, review);

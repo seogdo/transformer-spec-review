@@ -19,6 +19,11 @@
 
   <main id="workspace" class="workspace">
     <div class="scope-banner"><span class="banner-symbol" aria-hidden="true">i</span><p><strong>연구용 가상 문서 검토</strong><span>문서 간 정합성 확인을 돕습니다. 설계 승인·제품 안전·시험 합격을 판정하지 않습니다.</span></p></div>
+    <section class="ai-runtime-panel" aria-label="현재 서버 AI 실행 설정">
+      <strong id="ai-runtime-label">현재 AI 설정 확인 중</strong>
+      <p id="ai-runtime-detail" class="small muted">제공자와 모델은 서버 시작 시 선택합니다. 저장 기록의 실행 출처와는 별개입니다.</p>
+      <div id="external-ai-notice" class="message warning-message" hidden><strong>OpenAI 외부 처리 · API 비용 안내</strong><p>AI 근거 추출은 문서 텍스트와 검색 근거를, AI 구조 확인은 검토 항목 정보를 OpenAI로 전송합니다. 호출 비용이 발생할 수 있습니다. 회사 기밀·개인정보는 사용하지 마세요. 정형 PDF 검토와 저장 기록 조회는 AI 호출 없이 가능합니다.</p><label class="confirmation"><input id="external-ai-consent" type="checkbox" autocomplete="off"><span>이번 AI 요청의 외부 정보 전송과 API 비용 발생 가능성을 확인하고 동의합니다.<small>동의는 저장하거나 자동 복원하지 않습니다. 각 요청 전 다시 확인합니다.</small></span></label></div>
+    </section>
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">수주 확정 후, 기술 인계 전</p><h1 id="page-title">문서의 차이를 찾고,<br>근거로 확인하세요.</h1><p class="intro-description">고객 사양과 승인된 변경이 내부 인계표에<br class="desktop-break"> 빠짐없이 반영되었는지 확인합니다.</p></div>
       <aside class="intro-note"><span class="note-tag">현재 신규 검토 범위</span><p>한 프로젝트 · 한 제품</p><div class="scope-numbers"><span><b>3</b>종 문서</span><span><b>10</b>개 고정 항목</span></div><p class="muted small">모호한 내용은 확정하지 않고<br>담당자 확인 항목으로 남깁니다.</p></aside>
@@ -71,6 +76,7 @@
       <div id="results-empty" class="panel empty-state"><span class="empty-icon" aria-hidden="true">↗</span><h3>확인한 문서로 검토를 시작하세요</h3><p>항목별 요구값, 인계값, 확인 이유와 원문 근거가 이곳에 표시됩니다.</p></div>
       <div id="results-content" hidden>
         <section id="review-customer-check" class="customer-check customer-check-result" aria-label="이 기록의 고객사 기본정보 확인"></section>
+        <p id="review-ai-origin" class="saved-ai-origin small"></p>
         <div id="summary-cards" class="summary-grid" aria-label="상태별 항목 수"></div>
         <p id="review-field-note" class="message warning-message" role="status" hidden></p>
         <div id="review-warnings" class="message warning-message" hidden></div>
@@ -80,7 +86,7 @@
           <div class="panel table-panel"><div class="table-scroll"><table><caption id="results-caption" class="sr-only">저장된 검토 항목의 요구값과 인계값 비교 결과</caption><thead><tr><th scope="col">검토 항목</th><th scope="col">요구값</th><th scope="col">인계값</th><th scope="col">상태</th><th scope="col">근거</th></tr></thead><tbody id="results-body"></tbody></table></div><p id="filter-empty" class="filter-empty" hidden>이 필터에 해당하는 항목이 없습니다.</p></div>
           <aside id="evidence-panel" class="panel evidence-panel" aria-labelledby="evidence-title"><div class="evidence-header"><p class="section-kicker">EVIDENCE</p><h3 id="evidence-title">항목을 선택하세요</h3></div><div id="evidence-content"><p class="muted small">결과표의 항목을 선택하면 판단 이유와 문서·페이지·원문을 볼 수 있습니다.</p></div></aside>
         </div>
-        <section class="panel ai-panel" aria-labelledby="ai-title"><div><span class="note-tag">선택 기능</span><h3 id="ai-title">AI가 정리한 항목 정보를 확인</h3><p class="small muted">버튼을 눌렀을 때만 로컬 AI를 요청합니다. AI가 옮긴 구조화 정보가 기준 사실과 같은지 확인하며, 화면 설명은 코드 서식으로 표시합니다. 불일치하거나 실패하면 기존 코드 설명을 유지합니다.</p><p id="model-label" class="model-label">모델 상태 확인 중</p></div><button id="explain-button" class="button button-secondary" type="button">AI 구조 확인 요청</button><p id="ai-note" class="ai-note" role="status" hidden></p></section>
+        <section class="panel ai-panel" aria-labelledby="ai-title"><div><span class="note-tag">선택 기능</span><h3 id="ai-title">AI가 정리한 항목 정보를 확인</h3><p class="small muted">버튼을 눌렀을 때 현재 서버에 설정된 AI를 요청합니다. AI가 옮긴 구조화 정보가 기준 사실과 같은지 확인하며, 화면 설명은 코드 서식으로 표시합니다. 불일치하거나 실패하면 기존 코드 설명을 유지합니다.</p><p id="model-label" class="model-label">모델 상태 확인 중</p></div><button id="explain-button" class="button button-secondary" type="button">AI 구조 확인 요청</button><p id="ai-note" class="ai-note" role="status" hidden></p></section>
         <div class="panel export-panel"><div><h3>담당자 검토 기록 저장</h3><p id="export-description" class="small muted">저장된 검토 결과와 근거를 JSON으로 내려받거나 회의용 보고서로 엽니다. 보고서는 브라우저 인쇄에서 PDF로 저장할 수 있습니다. 저장은 설계 승인·발주·제작 지시를 의미하지 않습니다.</p><label class="confirmation export-confirmation"><input id="export-confirmed" type="checkbox"><span>표시된 결과와 원문을 사람이 검토했습니다.</span></label></div><div class="export-actions"><button id="report-button" class="button button-secondary" type="button" disabled>회의용 보고서 열기</button><button id="export-button" class="button button-primary" type="button" disabled>검토 기록 내려받기</button></div></div>
         <details class="limitations"><summary>검토 범위와 한계</summary><ul id="limitations-list"></ul></details>
       </div>

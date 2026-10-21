@@ -257,7 +257,10 @@ class ExtractionApiTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         job_id = responses[0].json()["job_id"]
         mapping = json.loads((self.data / "extraction_requests" / f"{key}.json").read_text())
-        self.assertEqual(mapping, {"upload_id": uploaded["upload_id"], "job_id": job_id})
+        self.assertEqual({key: mapping[key] for key in ("upload_id", "job_id")},
+                         {"upload_id": uploaded["upload_id"], "job_id": job_id})
+        self.assertEqual(mapping["ai_execution"]["provider"], "ollama")
+        self.assertEqual(mapping["ai_execution"]["model"], self.app.state.ai_config.model)
         self.assertEqual(len(list((self.data / "extractions").glob("*.json"))), 1)
         release.set()
         self.assertEqual(self.wait(job_id)["status"], "completed")

@@ -58,6 +58,41 @@ def _pairs(value: Any, labels: dict[str, str] | None = None) -> str:
     return f'<dl class="report-meta">{rows}</dl>'
 
 
+def _ai_execution(record: dict) -> str:
+    """Show only saved extraction provenance, never today's server settings.
+
+    New reviews retain a top-level snapshot. The nested extraction report is
+    a compatibility source only when that key is absent: an explicit null or
+    malformed snapshot must not be silently replaced with a different value.
+    Explanation requests have their own provenance and are not extraction.
+    """
+    execution = record.get("ai_execution", _ABSENT)
+    if execution is _ABSENT:
+        execution = _mapping(record.get("extraction_report")).get("ai_execution", _ABSENT)
+    info = _mapping(execution)
+    parts = [
+        '<section class="report-section"><h2>저장된 AI 추출 실행 출처</h2>',
+        '<p class="report-small">저장 당시의 제공자·모델·실행 모드입니다. 현재 서버 설정으로 추측하거나 '
+        '보고서를 열면서 AI를 다시 실행하지 않습니다. 요청 경로 표시는 응답 성공이나 검증 통과를 보장하지 않습니다.</p>',
+    ]
+    if not isinstance(execution, dict) or not all(
+        isinstance(info.get(key), str) and info[key].strip()
+        for key in ("provider", "execution_mode")
+    ):
+        parts.append('<p class="report-warning">출처 미기록 또는 실행 메타데이터 확인 필요: '
+                     '제공자와 실행 모드를 확인할 수 없습니다. 과거 추출 방식만으로 값을 채우지 않습니다.</p>')
+    if info.get("execution_mode") == "injected":
+        parts.append('<p class="report-notice">주입 실행 (injected) 기록입니다. '
+                     '저장된 제공자·모델이 있어도 실제 제공자 요청을 수행한 기록으로 간주하지 않습니다.</p>')
+    # Select fields explicitly so arbitrary transport settings, credentials or
+    # later explanation metadata cannot be copied into the printable report.
+    parts.append(_pairs({key: info.get(key, _ABSENT) for key in ("provider", "model", "execution_mode")},
+                        {"provider": "저장된 제공자 (provider)", "model": "저장된 모델 (model)",
+                         "execution_mode": "저장된 실행 모드 (execution_mode)"}))
+    parts.append("</section>")
+    return "".join(parts)
+
+
 def _status(value: Any) -> str:
     label, tone = _STATUS.get(value, ("알 수 없는 저장 상태", "unknown")) if isinstance(value, str) else ("알 수 없는 저장 상태", "unknown")
     return f'<span class="report-status {tone}">{label} · <code>{_html(value)}</code></span>'
@@ -236,6 +271,7 @@ def render_report(record: dict) -> str:
         _pairs({key: record.get(key, _ABSENT) for key in ("review_id", "upload_id", "created_at", "record_kind", "extraction_method", "policy_confirmed")},
                {"review_id": "검토 ID", "upload_id": "업로드 ID", "created_at": "저장된 생성 시각", "record_kind": "기록 종류",
                 "extraction_method": "저장된 추출 방식", "policy_confirmed": "저장 당시 기준 확인 값 (새 확인 아님)"}), "</section>",
+        _ai_execution(record),
         '<section class="report-section"><h2>고객사 기본정보</h2><p class="report-small">기술 항목과 별도인 저장 메타데이터입니다. 실제 거래 관계·법인 동일성을 인증하지 않습니다.</p>',
     ])
     if isinstance(identity, dict):

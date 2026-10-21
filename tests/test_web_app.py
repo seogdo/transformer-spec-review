@@ -412,7 +412,7 @@ class WebAppIntegrationTests(unittest.TestCase):
     def test_ai_value_status_and_source_tampering_cannot_change_visible_facts(self):
         original = self.review()
 
-        def tampered(facts, _base_url):
+        def tampered(facts, _base_url, **_options):
             items = deepcopy(facts)
             fan = next(item for item in items if item["field"] == "fan_supply_voltage")
             fan.update(actual_text="99000 V", status="MATCH", source_ids=["UNTRUSTED-SOURCE"])
@@ -432,7 +432,7 @@ class WebAppIntegrationTests(unittest.TestCase):
 
     def test_exact_mock_ai_plan_is_only_labeled_verified_not_independent(self):
         original = self.review()
-        with patch("handoff_review.explanation._request_plan", side_effect=lambda facts, _url: {"items": deepcopy(facts)}):
+        with patch("handoff_review.explanation._request_plan", side_effect=lambda facts, _url, **_options: {"items": deepcopy(facts)}):
             response = self.client.post(f"/api/reviews/{original['review_id']}/explain", json={"use_ai": True})
         self.assertEqual(response.status_code, 200)
         self.assertEqual({item["origin"] for item in response.json()["items"]}, {"ai_verified"})

@@ -26,6 +26,34 @@ class ExplanationTests(unittest.TestCase):
         with patch.object(module, "_request_plan", return_value=plan):
             return module.explain_review(self.review, use_ai=True)
 
+    def test_openai_explanation_uses_derived_facts_and_twenty_second_budget(self):
+        config = module.AIConfig("openai", "explicit-model")
+        with patch.object(module, "openai_request", return_value={"items": self.facts}) as api, patch.object(module, "_request_plan") as local:
+            result = module.explain_review(self.review, use_ai=True, ai_config=config)
+        local.assert_not_called()
+        self.assertEqual(api.call_args.args[0], config)
+        self.assertEqual(api.call_args.args[2], 20.0)
+        sent = json.loads(api.call_args.args[1]["messages"][1]["content"])
+        self.assertEqual(sent, {"items": self.facts})
+        self.assertTrue(all(row["validation_status"] == "accepted" for row in result["items"]))
+        self.assertEqual(result["ai_execution"]["calls_succeeded"], 1)
+
+    def test_openai_disabled_makes_no_api_or_key_access(self):
+        with patch.object(module, "openai_request") as api, patch("handoff_review.llm_backend._api_key", side_effect=AssertionError("key read")):
+            result = module.explain_review(self.review, ai_config=module.AIConfig("openai", "explicit-model"))
+        api.assert_not_called()
+        self.assertEqual(result["ai_execution"]["execution_mode"], "not_requested")
+        self.assertEqual(result["ai_execution"]["calls_attempted"], 0)
+
+    def test_openai_failure_and_refusal_preserve_fixed_code_text(self):
+        for error, expected in ((OSError("synthetic secret"), "unavailable"), (module.PlanRejected("refusal"), "rejected")):
+            with self.subTest(expected=expected), patch.object(module, "openai_request", side_effect=error), patch.object(module, "_request_plan") as local:
+                result = module.explain_review(self.review, use_ai=True, ai_config=module.AIConfig("openai", "explicit-model"))
+            local.assert_not_called()
+            self.assertEqual(result["ai_execution"]["calls_succeeded"], 0)
+            self.assertTrue(all(row["validation_status"] == expected for row in result["items"]))
+            self.assertNotIn("synthetic secret", json.dumps(result))
+
     def test_default_is_offline_and_preserves_input(self):
         before = deepcopy(self.review)
         with patch.object(module, "_request_plan", side_effect=AssertionError("network")):

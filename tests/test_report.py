@@ -141,6 +141,95 @@ class ReportTests(unittest.TestCase):
         self.assertIn(escape(row["reason"]), html)
         self.assertIn("보고서에서 다시 계산하지 않습니다", html)
 
+    def test_saved_openai_execution_is_shown_without_environment_lookup(self):
+        self.record["ai_execution"] = {"provider": "openai", "model": "synthetic-openai-model",
+                                       "execution_mode": "live_request"}
+        self.seed()
+        with patch("os.getenv", side_effect=AssertionError("no environment lookup")):
+            html = render_report(self.record)
+        self.assertIn("저장된 AI 추출 실행 출처", html)
+        self.assertIn("<dd>openai</dd>", html)
+        self.assertIn("<dd>synthetic-openai-model</dd>", html)
+        self.assertIn("<dd>live_request</dd>", html)
+        self.assertNotIn("출처 미기록", html)
+        self.assertIn("요청 경로 표시는 응답 성공이나 검증 통과를 보장하지 않습니다", html)
+        self.assertIn("<dd>openai</dd>", self.get_report().text)
+
+    def test_nested_saved_ollama_execution_is_a_compatibility_source(self):
+        self.record["extraction_report"] = {
+            "ai_execution": {"provider": "ollama", "model": "synthetic-ollama-model",
+                             "execution_mode": "live_request"}}
+        html = render_report(self.record)
+        self.assertIn("<dd>ollama</dd>", html)
+        self.assertIn("<dd>synthetic-ollama-model</dd>", html)
+        self.assertNotIn("출처 미기록", html)
+
+    def test_top_level_execution_takes_precedence_over_nested_or_explanation(self):
+        self.record["ai_execution"] = {"provider": "openai", "model": "saved-extraction-model",
+                                       "execution_mode": "live_request"}
+        self.record["extraction_report"] = {
+            "ai_execution": {"provider": "ollama", "model": "stale-nested-model",
+                             "execution_mode": "live_request"}}
+        self.record["explanations"] = {
+            "ai_execution": {"provider": "ollama", "model": "separate-explanation-model",
+                             "execution_mode": "live_request"}}
+        html = render_report(self.record)
+        self.assertIn("<dd>openai</dd>", html)
+        self.assertIn("saved-extraction-model", html)
+        self.assertNotIn("stale-nested-model", html)
+        self.assertNotIn("separate-explanation-model", html)
+        self.assertNotIn("<dd>ollama</dd>", html)
+
+    def test_injected_execution_is_not_presented_as_real_provider_request(self):
+        for provider, model in (("openai", "configured-model"), ("injected", None)):
+            with self.subTest(provider=provider):
+                self.record["ai_execution"] = {"provider": provider, "model": model,
+                                               "execution_mode": "injected"}
+                html = render_report(self.record)
+                self.assertIn(f"<dd>{provider}</dd>", html)
+                self.assertIn("<dd>injected</dd>", html)
+                self.assertIn("주입 실행 (injected) 기록입니다", html)
+                self.assertIn("실제 제공자 요청을 수행한 기록으로 간주하지 않습니다", html)
+                if model is None:
+                    self.assertIn("<dd>null (저장값)</dd>", html)
+                self.assertNotIn("출처 미기록", html)
+
+    def test_legacy_execution_is_not_inferred_from_method_or_explanation(self):
+        self.record["explanations"] = {
+            "ai_execution": {"provider": "openai", "model": "explanation-only-model",
+                             "execution_mode": "live_request"}}
+        for method in ("local_tool_rag", "structured_pdf", None):
+            with self.subTest(method=method):
+                self.record["extraction_method"] = method
+                html = render_report(self.record)
+                self.assertIn("출처 미기록", html)
+                self.assertNotIn("<dd>openai</dd>", html)
+                self.assertNotIn("<dd>ollama</dd>", html)
+                self.assertNotIn("explanation-only-model", html)
+
+    def test_malformed_execution_does_not_silently_use_nested_snapshot(self):
+        self.record["extraction_report"] = {
+            "ai_execution": {"provider": "ollama", "model": "nested-fallback-not-allowed",
+                             "execution_mode": "live_request"}}
+        for execution in (None, [], "unknown", {}, {"provider": "openai"},
+                          {"provider": None, "execution_mode": "live_request"}):
+            with self.subTest(execution=execution):
+                self.record["ai_execution"] = execution
+                html = render_report(self.record)
+                self.assertIn("출처 미기록", html)
+                self.assertNotIn("nested-fallback-not-allowed", html)
+                self.assertNotIn("<dd>ollama</dd>", html)
+
+    def test_execution_fields_are_escaped_and_unrelated_fields_are_excluded(self):
+        payload = '<img src="https://invalid.example/" onerror="alert(1)">&'
+        self.record["ai_execution"] = {"provider": payload, "model": payload,
+                                       "execution_mode": payload,
+                                       "credential": "SYNTHETIC-UNRELATED-METADATA"}
+        html = render_report(self.record)
+        self.assertIn(escape(payload, quote=True), html)
+        self.assertNotIn("SYNTHETIC-UNRELATED-METADATA", html)
+        self.assertFalse(any(tag == "img" for tag, _ in Tags(html).tags))
+
     def test_held_null_candidate_and_missing_evidence_are_explicit(self):
         row = self.record["results"][0]
         row.update(status="NEEDS_REVIEW", expected=None, actual=None, evidence_complete=False)
@@ -277,6 +366,10 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(self.hashes(), before)
 
     def test_get_report_is_read_only_zero_ai_and_preserves_export(self):
+        self.record["ai_execution"] = {"provider": "openai", "model": "stored-model",
+                                       "execution_mode": "injected"}
+        self.record["extraction_report"] = {"ai_execution": deepcopy(self.record["ai_execution"])}
+        self.seed()
         before = self.hashes()
         original = deepcopy(self.record)
         self.app.state.extract_upload = Mock(side_effect=AssertionError("no extraction"))

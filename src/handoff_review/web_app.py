@@ -34,6 +34,7 @@ from .contracts import FIELD_KEYS, STATUSES
 from .customers import VERSION as CUSTOMER_CHECK_VERSION, check_customers
 from .review import review_case
 from .explanation import explain_review
+from .llm_backend import get_ai_config
 from .report import render_report
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +42,7 @@ ROLES = {"spec_file": "customer_spec", "amendment_file": "amendment", "handoff_f
 FILE_LIMIT = 5 * 1024**2
 BODY_LIMIT = 16 * 1024**2
 NOTICE = "교육용 가상 문서 정합성 검토입니다. 설계 적합성·제품 안전·실제 승인이나 발주를 판정하지 않습니다."
+EXTERNAL_AI_CONSENT = "external-processing-and-cost"
 
 
 def now() -> str:
@@ -150,10 +152,10 @@ def parse_pdf(path: Path, role: str, mode: str = "template") -> dict:
     return parsed
 
 
-def extract_text_upload(documents: list[dict]) -> dict:
+def extract_text_upload(documents: list[dict], *, ai_config=None) -> dict:
     """Lazy import keeps deterministic parsing usable without a model server."""
     from .extraction_agent import extract_upload
-    return extract_upload(documents)
+    return extract_upload(documents, ai_config=ai_config)
 
 
 def compact_document(item: dict) -> dict:
@@ -230,18 +232,50 @@ def bind_evidence(result: dict, upload: dict) -> None:
     result["summary"] = {status: counts.get(status, 0) for status in STATUSES}
 
 
-def create_app(data_dir: Path | None = None) -> FastAPI:
+def create_app(data_dir: Path | None = None, *, ai_config=None) -> FastAPI:
     app = FastAPI(title="수주 인계 검토", version="0.2.0", docs_url=None, redoc_url=None)
     data = (data_dir or ROOT / "uploads").resolve()
     app.state.data_dir = data
     app.state.parse_pdf = parse_pdf
     app.state.parse_text_pdf = lambda path, role: parse_pdf(path, role, "text")
     app.state.extract_upload = extract_text_upload
+    # Resolve once at startup. Environment edits never silently switch an
+    # in-flight job or a reused idempotency identity to another provider.
+    config = ai_config if ai_config is not None else get_ai_config()
+    app.state.ai_config = config
+    app.state.explain_review = None  # Optional test seam keeps its old signature.
     app.state.extraction_tasks = {}
     app.state.ai_gate = asyncio.Semaphore(1)
     app.state.extraction_request_lock = asyncio.Lock()
     app.add_middleware(LocalRequestBoundary)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]", "testserver"])
+
+    def configured_execution() -> dict:
+        return {**config.public_info(), "execution_source": "configured_backend",
+                "execution_mode": "configured_not_started"}
+
+    def injected_execution() -> dict:
+        return {"provider": "injected", "model": None, "configuration_ready": True,
+                "external_processing": False, "model_readiness_checked": False,
+                "execution_source": "injected_callable_not_live_provider", "execution_mode": "injected"}
+
+    def require_ai_permission(request: Request) -> None:
+        info = config.public_info()
+        if info.get("external_processing") and request.headers.getlist("x-ai-consent") != [EXTERNAL_AI_CONSENT]:
+            raise HTTPException(403, "OpenAI로 문서·검토 정보가 전송되고 API 비용이 발생할 수 있습니다. 화면에서 외부 처리·과금 동의 후 명시적으로 요청해 주세요.")
+        if info.get("external_processing") and (not info.get("config_signature")
+                or request.headers.getlist("x-ai-configuration") != [info["config_signature"]]):
+            raise HTTPException(409, "화면에서 확인한 AI 제공자·모델과 현재 서버 설정을 대조할 수 없습니다. 상단 ‘다시 확인’ 또는 새로고침으로 현재 설정을 확인하고 외부 처리·비용에 다시 동의해 주세요. AI 요청은 실행하지 않았습니다.")
+        if not info.get("configuration_ready", False):
+            raise HTTPException(503, "AI 실행 설정이 준비되지 않았습니다. OpenAI 사용 시 서버의 OPENAI_API_KEY와 OPENAI_MODEL 설정을 확인하세요. 키 값은 화면에 입력하지 마세요. 정형 PDF와 과거 기록 조회는 계속 사용할 수 있습니다.")
+
+    def same_execution(previous: dict) -> bool:
+        saved = previous.get("ai_execution")
+        info = config.public_info()
+        # Old mappings predate provider selection and only used Ollama.
+        if saved is None:
+            return info.get("provider") == "ollama"
+        return isinstance(saved, dict) and all(saved.get(key) == info.get(key) for key in ("provider", "model"))
 
     @app.middleware("http")
     async def response_headers(request: Request, call_next):
@@ -269,6 +303,8 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             # inferred source from a request mapping or the current browser.
             if "source_upload_id" in job:
                 interrupted["source_upload_id"] = job["source_upload_id"]
+            if "ai_execution" in job:
+                interrupted["ai_execution"] = job["ai_execution"]
             job = interrupted
             write_json(path, job)
         return job
@@ -277,7 +313,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         return {"upload_id": record["upload_id"], "mode": record.get("mode", "template"),
                 "documents": [compact_document(item) for item in record["documents"]],
                 "customer_check": check_customers([item["document"] for item in record["documents"]]),
-                "extraction_report": record.get("extraction_report"), "notice": NOTICE}
+                "extraction_report": record.get("extraction_report"), "ai_execution": record.get("ai_execution"), "notice": NOTICE}
 
     def stored_document(upload_id: str, document_id: str) -> tuple[dict, dict]:
         upload = upload_record(upload_id)
@@ -288,9 +324,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "model": "qwen3.5:2b", "ai_optional": True,
-                "parser": "synthetic_template_and_local_ai_text", "official_approval": False,
-                "notice": NOTICE, "model_readiness_checked": False}
+        return {"status": "ok", **config.public_info(), "ai_optional": True,
+                "parser": "synthetic_template_and_guarded_ai_text", "official_approval": False,
+                "notice": NOTICE}
 
     @app.get("/api/samples")
     def samples():
@@ -365,7 +401,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         record = upload_record(upload_id)
         return metadata(record)
 
-    async def process_extraction(job_id: str, source: dict):
+    async def process_extraction(job_id: str, source: dict, extractor, execution: dict):
         """Persist a new snapshot: an AI run never mutates previously reviewed inputs.
 
         One bounded local-model run is allowed at a time. Parser metadata, PDF
@@ -374,7 +410,14 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         """
         job_path = data / "extractions" / f"{job_id}.json"
         try:
-            result = await asyncio.to_thread(app.state.extract_upload, deepcopy(source["documents"]))
+            if extractor is extract_text_upload:
+                result = await asyncio.to_thread(extractor, deepcopy(source["documents"]), ai_config=config)
+                reported = result.get("ai_execution")
+                if isinstance(reported, dict) and all(reported.get(key) == execution.get(key) for key in ("provider", "model")):
+                    execution = {**execution, **reported}
+            else:
+                result = await asyncio.to_thread(extractor, deepcopy(source["documents"]))
+            result = {**result, "ai_execution": execution}
             extracted = result["documents"]
             if not isinstance(extracted, list) or len(extracted) != len(source["documents"]):
                 raise ValueError("Invalid extraction fieldset")
@@ -390,7 +433,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                     item = {**original,
                             "document": {**original["document"], "fields": proposal["document"]["fields"]},
                             "warnings": proposal.get("warnings", original["warnings"]),
-                            "extraction_method": "local_tool_rag"}
+                            "extraction_method": result.get("method", "injected_extraction" if execution["provider"] == "injected" else "guarded_tool_rag")}
                     old_path = data / "sets" / source["upload_id"] / original["stored_name"]
                     original_bytes = old_path.read_bytes()
                     if hashlib.sha256(original_bytes).hexdigest() != original["sha256"]:
@@ -400,22 +443,24 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                 report = {key: value for key, value in result.items() if key != "documents"}
                 record = {"upload_id": upload_id, "created_at": now(), "documents": documents,
                           "mode": "text_ai", "source_upload_id": source["upload_id"],
-                          "record_kind": "local_synthetic_ai_extraction", "extraction_report": report, "notice": NOTICE}
+                          "record_kind": "local_synthetic_ai_extraction", "extraction_report": report,
+                          "ai_execution": execution, "notice": NOTICE}
                 write_json(staging_path / "manifest.json", record)
                 destination = data / "sets" / upload_id
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 staging_path.rename(destination)
             write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
                                   "status": "completed", "finished_at": now(),
+                                  "ai_execution": execution,
                                   "message": "근거 추출을 마쳤습니다. 적용 기준과 확인 필요 항목을 검토해 주세요.",
                                   "upload": metadata(record), "extraction": report})
         except asyncio.CancelledError:
             write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
-                                  "status": "failed", "error": "서버 종료로 추출 작업이 중단되었습니다. 다시 요청해 주세요."})
+                                  "status": "failed", "ai_execution": execution, "error": "서버 종료로 추출 작업이 중단되었습니다. 다시 요청해 주세요."})
             raise
         except Exception:
             write_json(job_path, {"job_id": job_id, "source_upload_id": source["upload_id"],
-                                  "status": "failed", "error": "추출 결과를 저장하지 못했습니다. 기존 문서는 유지됩니다. 다시 요청해 주세요."})
+                                  "status": "failed", "ai_execution": execution, "error": "추출 결과를 저장하지 못했습니다. 기존 문서는 유지됩니다. 다시 요청해 주세요."})
         finally:
             app.state.extraction_tasks.pop(job_id, None)
             app.state.ai_gate.release()
@@ -447,20 +492,26 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                 previous = load_json(request_path)
                 if previous.get("upload_id") != upload_id:
                     raise HTTPException(409, "이미 다른 문서에 사용한 추출 요청 번호입니다. 새 요청 번호를 사용해 주세요.")
+                if not same_execution(previous):
+                    raise HTTPException(409, "이 요청 번호의 AI 제공자·모델과 현재 서버 설정이 다릅니다. 기존 작업은 기록 ID로 조회할 수 있습니다. 새 설정으로 실행하려면 문서를 다시 읽고 명시적으로 요청해 주세요.")
                 return extraction_record(previous["job_id"])
+            require_ai_permission(request)
             if app.state.ai_gate.locked():
                 raise HTTPException(409, "다른 AI 작업이 진행 중입니다. 완료 후 다시 시도해 주세요.")
             await app.state.ai_gate.acquire()
             job_id = uuid4().hex
             job_path = data / "extractions" / f"{job_id}.json"
+            extractor = app.state.extract_upload
+            execution = configured_execution() if extractor is extract_text_upload else injected_execution()
             record = {"job_id": job_id, "source_upload_id": source["upload_id"],
                       "status": "running", "created_at": now(),
-                      "message": "로컬 AI가 검색 계획을 세우고 근거에서 항목을 추출하고 있습니다."}
+                      "ai_execution": execution,
+                      "message": "AI가 검색 계획을 세우고 근거에서 항목을 추출하고 있습니다."}
             try:
                 write_json(job_path, record)
                 if request_path is not None:
-                    write_json(request_path, {"upload_id": upload_id, "job_id": job_id})
-                worker = process_extraction(job_id, source)
+                    write_json(request_path, {"upload_id": upload_id, "job_id": job_id, "ai_execution": configured_execution()})
+                worker = process_extraction(job_id, source, extractor, execution)
                 try:
                     task = asyncio.create_task(worker)
                 except Exception:
@@ -519,8 +570,8 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                       record_kind="research_review_not_approval", notice=NOTICE,
                       extraction_method=("customer_identity_hold_before_extraction"
                           if any(item["extraction_method"] == "text_pending_ai" for item in upload["documents"])
-                          else "local_tool_rag" if upload.get("mode") == "text_ai" else "synthetic_template_text"),
-                      extraction_report=upload.get("extraction_report"), llm_used_for_verdict=False)
+                          else (upload.get("extraction_report") or {}).get("method", "unknown_historical_ai") if upload.get("mode") == "text_ai" else "synthetic_template_text"),
+                      extraction_report=upload.get("extraction_report"), ai_execution=upload.get("ai_execution"), llm_used_for_verdict=False)
         result["limitations"] = [NOTICE,
             "고객사 표기는 사용자 지정 후보·별칭으로만 확인합니다. 실제 거래 관계·법인 동일성·승인을 검증하지 않으며 불명확하면 기술 비교를 보류합니다.",
             "가상 문서의 명시적 메타데이터와 지원하는 항목 표현만 처리합니다. 임의 회사 양식·스캔 OCR·CAD는 지원하지 않습니다.",
@@ -528,7 +579,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             "인용문은 저장된 PDF 페이지의 추출 텍스트와 대조했습니다. 설계 적합성 판단은 아닙니다.",
             "최종 수치·승인관계 판정은 코드가 수행합니다. AI 추출을 사용해도 값·원문·중복·조건 검증을 통과한 제안만 비교합니다.",
             "AI 검색은 제한된 키워드 기반입니다. 검색·추출 실패는 정보가 없다는 증명이 아니므로 확인 필요로 보류합니다."]
-        result["explanations"] = explain_review(result, use_ai=False)
+        result["explanations"] = explain_review(result, use_ai=False, ai_config=config)
         write_json(data / "reviews" / f"{result['review_id']}.json", result)
         return result
 
@@ -537,7 +588,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         return review_record(review_id)
 
     @app.post("/api/reviews/{review_id}/explain")
-    async def explain(review_id: str, body: ExplainRequest):
+    async def explain(review_id: str, body: ExplainRequest, request: Request):
         record = review_record(review_id)
         rows = record.get("results")
         if (not isinstance(rows, list) or len(rows) != len(FIELD_KEYS)
@@ -549,8 +600,15 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             raise HTTPException(409, "고객사가 미검증이거나 일치하지 않는 기록입니다. 원문을 확인해 다시 업로드·검토해 주세요. 기존 기록과 내보내기는 그대로 유지됩니다.")
         if app.state.ai_gate.locked():
             raise HTTPException(409, "다른 AI 확인이 진행 중입니다. 완료 후 다시 시도해 주세요.")
+        if body.use_ai:
+            require_ai_permission(request)
         async with app.state.ai_gate:
-            result = await asyncio.to_thread(explain_review, record, body.use_ai)
+            explainer = app.state.explain_review
+            if explainer is not None:
+                result = await asyncio.to_thread(explainer, record, body.use_ai)
+                result = {**result, "ai_execution": injected_execution()}
+            else:
+                result = await asyncio.to_thread(explain_review, record, body.use_ai, ai_config=config)
         record["explanations"] = result
         write_json(data / "reviews" / f"{review_id}.json", record)
         return result

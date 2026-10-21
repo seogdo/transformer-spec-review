@@ -7,6 +7,7 @@ const CURRENT_FIELDS = Object.freeze({rated_power: "정격용량", hv_voltage: "
 const ROLES = {customer_spec: "고객 기술사양서", spec: "고객 기술사양서", amendment: "기술 변경 합의서", handoff: "내부 수주 인계표"};
 const FILE_FIELDS = {customer_spec: "spec_file", spec: "spec_file", spec_file: "spec_file", amendment: "amendment_file", amendment_file: "amendment_file", handoff: "handoff_file", handoff_file: "handoff_file"};
 const MAX_BYTES = 5 * 1024 * 1024;
+const EXTERNAL_AI_CONSENT = "external-processing-and-cost";
 const STORAGE = {review: "handoff-review:review_id", upload: "handoff-review:upload_id", job: "handoff-review:job_id", extractionRequest: "handoff-review:extraction_request"};
 const state = {health: null, samples: [], upload: null, review: null, selected: null, filter: "all", busy: false, retry: null, explanations: new Map(), mode: "template", extraction: null, job: null, extractionRequest: null, extracting: false};
 
@@ -159,6 +160,35 @@ function explainBlockedMessage(review) {
   if (!hasCustomerCheck(review)) return "고객사 미검증 과거기록은 AI 구조 확인을 사용할 수 없습니다. 고객사 표기가 있는 문서를 다시 읽고 검토해 주세요.";
   return "고객사 확인이 통과되지 않아 AI 구조 확인을 사용할 수 없습니다. 문서의 고객사 원문과 혼입·누락·모호한 표기를 확인해 주세요.";
 }
+function aiBlockedMessage() {
+  if (!state.health || !["openai", "ollama"].includes(state.health.provider)) return "현재 AI 설정을 확인하지 못했습니다. 상단에서 서버를 다시 확인해 주세요.";
+  if (state.health.configuration_ready !== true) return "AI 실행 설정이 준비되지 않았습니다. 서버의 모델 설정과 API 키 설정 여부를 확인하세요. 정형 검토와 과거 조회는 계속 사용할 수 있습니다.";
+  if (state.health.external_processing === true && !state.health.config_signature) return "현재 AI 설정 식별자를 확인하지 못했습니다. 상단에서 서버를 다시 확인해 주세요.";
+  if (state.health.external_processing === true && !$("external-ai-consent").checked) return "상단의 OpenAI 외부 정보 전송·API 비용 안내를 확인하고 이번 요청에 동의해 주세요.";
+  return "";
+}
+function aiRequestHeaders() {
+  const blocked = aiBlockedMessage();
+  if (blocked) throw new Error(blocked);
+  return state.health.external_processing === true ? {"X-AI-Consent": EXTERNAL_AI_CONSENT, "X-AI-Configuration": state.health.config_signature} : {};
+}
+function savedExecutionLabel(execution) {
+  if (!execution || typeof execution !== "object") return "실행 출처 미기록 · 현재 설정으로 추정하지 않습니다";
+  const provider = ({openai: "OpenAI API", ollama: "로컬 Ollama", injected: "주입된 시험 실행"})[execution.provider] || "제공자 미확인";
+  const mode = execution.execution_mode === "injected" ? " · 시험 대역(실제 제공자 호출 아님)" : execution.execution_mode === "live_request" ? " · 제공자 요청 경로" : " · 호출 완료 여부 미확인";
+  return `${provider} · ${execution.model || "모델 미기록"}${mode}`;
+}
+function renderAIConfig() {
+  const health = state.health;
+  const provider = ({openai: "OpenAI API", ollama: "로컬 Ollama"})[health?.provider] || "설정 미확인";
+  setText("ai-runtime-label", `현재 서버 설정 · ${provider} · ${health?.model || "모델 미설정"}`);
+  const key = health?.provider === "openai" ? `API 키 ${health.key_configured === true ? "설정됨(값 비공개)" : "미설정"} · ` : "";
+  const reason = ({MISSING_OPENAI_MODEL: "OPENAI_MODEL 미설정", MISSING_OPENAI_API_KEY: "OPENAI_API_KEY 미설정"})[health?.configuration_error];
+  setText("ai-runtime-detail", `${key}${health?.configuration_ready === true ? "설정 확인" : reason || "실행 설정 확인 필요"} · 연결·모델 접근권 미검증. 제공자와 모델은 서버 재시작으로 선택하며, 아래 저장 기록의 실행 출처와는 별개입니다.`);
+  $("external-ai-notice").hidden = health?.external_processing !== true;
+  setText("model-label", `다음 요청: ${provider} · ${health?.model || "모델 미설정"} · 연결·모델 접근권 미검증`);
+  controls();
+}
 function controls() {
   $("upload-button").disabled = state.busy;
   for (const id of ["spec-file", "amendment-file", "handoff-file", "health-retry", "policy-confirmed", "export-confirmed", "upload-mode"]) $(id).disabled = state.busy;
@@ -171,8 +201,10 @@ function controls() {
   $("policy-confirmed").disabled = state.busy || extractionRequired();
   $("review-button").disabled = state.busy || !state.upload || extractionRequired() || !$("policy-confirmed").checked;
   setText("review-button", state.upload && !customerComparisonAllowed(state.upload) ? "확인 필요 사항 보기" : "10개 항목 검토하기 →");
-  $("extract-button").disabled = state.busy || !pendingExtraction() || hasCustomerHold(state.upload);
-  $("explain-button").disabled = state.busy || !canExplainReview(state.review);
+  $("external-ai-consent").disabled = state.busy;
+  $("extract-button").disabled = state.busy || !pendingExtraction() || hasCustomerHold(state.upload) || (!state.job && Boolean(aiBlockedMessage()));
+  $("extract-button").title = state.job ? "기존 작업 조회는 새 AI 요청을 보내지 않습니다." : aiBlockedMessage();
+  $("explain-button").disabled = state.busy || !canExplainReview(state.review) || Boolean(aiBlockedMessage());
   $("explain-button").title = state.review && !canExplainReview(state.review) ? explainBlockedMessage(state.review) : "";
   $("export-button").disabled = state.busy || !state.review || !$("export-confirmed").checked;
   $("report-button").disabled = state.busy || !state.review || !$("export-confirmed").checked;
@@ -228,6 +260,7 @@ function renderMode() {
 function resetInputState(message) {
   clearError();
   state.upload = null; state.extraction = null; state.extracting = false;
+  $("external-ai-consent").checked = false;
   remember(STORAGE.upload, null); clearExtractionJob(); clearReviewState();
   $("policy-confirmed").checked = false; renderDocuments(); renderExtraction(); steps(1); controls();
   if (message) { setText("restore-note", message); $("restore-note").hidden = false; }
@@ -250,6 +283,7 @@ function toolKind(entry) {
   if (name === "plan_search") return "검색 계획";
   if (name === "scope_documents") return "문서 범위 확인";
   if (name === "local_model") return "로컬 AI 응답 확인";
+  if (name === "openai_model" || name === "model_response") return "AI 응답 확인";
   if (name.includes("search") || name.includes("retrieve")) return "근거 검색";
   if (name.includes("extract")) return "항목 추출";
   if (name.includes("valid") || name.includes("check")) return "추출값 확인";
@@ -261,6 +295,7 @@ function renderTrace(container, report) {
   const trace = Array.isArray(report.trace) ? report.trace : [];
   const statusLabels = {completed: "추출 완료", accepted: "추출값 확인 완료", success: "추출 완료", partial: "일부 항목 확인", unavailable: "AI 연결 사용 불가", failed: "추출 실패", rejected: "추출값 확인 불통과", running: "진행 중"};
   const facts = element("dl", "trace-facts");
+  facts.append(element("dt", "", "이 기록의 실행 출처"), element("dd", "", savedExecutionLabel(report.ai_execution)));
   const searches = Number.isInteger(report.search_calls) && report.search_calls >= 0 ? report.search_calls : trace.filter((entry) => entry?.tool === "search_documents").length;
   for (const [label, value] of [["처리 상태", statusLabels[report.status] || "결과 확인 필요"], ["근거 검색", `${searches}회`], ["AI 제안 필드", countValue(report.proposed_fields)], ["확인 통과 필드", countValue(report.accepted_fields)], ["모델 호출", countValue(report.llm_calls)]]) facts.append(element("dt", "", label), element("dd", "", value ?? "정보 없음"));
   container.append(facts);
@@ -308,16 +343,18 @@ function renderExtraction() {
 async function loadHealth() {
   try {
     const health = await api("/api/health", {timeout: 15000});
+    if (state.health?.provider !== health.provider || state.health?.model !== health.model || state.health?.config_signature !== health.config_signature) $("external-ai-consent").checked = false;
     state.health = health;
     const online = ["ok", "ready", "healthy"].includes(health.status);
     $("health-dot").className = `dot ${online ? "online" : "offline"}`;
     setText("health-label", online ? "검토 서버 연결됨" : `서버 상태: ${health.status || "확인 필요"}`);
-    setText("model-label", health.model ? `선택 모델 · ${health.model}` : "로컬 AI 모델 상태를 확인할 수 없습니다.");
+    renderAIConfig();
   } catch (error) {
     state.health = null;
+    $("external-ai-consent").checked = false;
     $("health-dot").className = "dot offline";
     setText("health-label", "서버 연결 확인 필요");
-    setText("model-label", "서버 연결 후 로컬 모델 상태를 확인합니다.");
+    renderAIConfig();
     throw error;
   }
 }
@@ -337,6 +374,7 @@ function checkFile(file, label) {
 function acceptUpload(upload, mode, extraction = null) {
   if (!upload.upload_id || !Array.isArray(upload.documents) || !upload.documents.length) throw new Error("문서 읽기 결과가 올바르지 않습니다.");
   state.upload = upload;
+  $("external-ai-consent").checked = false;
   state.mode = upload.mode === "text_ai" || mode === "text_ai" ? "text_ai" : "template";
   state.extraction = extraction || upload.extraction_report || null;
   clearExtractionJob();
@@ -416,7 +454,7 @@ async function pollExtraction(jobId) {
     }
     if (job.status === "failed") {
       clearExtractionJob();
-      state.extraction = {...(job.extraction || {}), status: "failed", error: extractionSummary(job.error || job.message || "추출 작업을 완료하지 못했습니다.")};
+      state.extraction = {...(job.extraction || {}), ai_execution: job.ai_execution || job.extraction?.ai_execution, status: "failed", error: extractionSummary(job.error || job.message || "추출 작업을 완료하지 못했습니다.")};
       throw new Error(extractionSummary(job.error || job.message || "추출 작업을 완료하지 못했습니다."));
     }
     if (job.status !== "running") throw new Error("알 수 없는 추출 작업 상태입니다.");
@@ -432,11 +470,12 @@ function extractUpload() {
     state.extracting = true; $("policy-confirmed").checked = false; clearReviewState(); renderExtraction(); controls();
     try {
       if (!state.job) {
+        const consentHeaders = aiRequestHeaders();
         const sourceUploadId = state.upload.upload_id;
         const key = extractionRequestKey(sourceUploadId);
         let job;
         try {
-          job = await api(`/api/uploads/${encodeURIComponent(sourceUploadId)}/extractions`, {method: "POST", headers: {"Idempotency-Key": key}, timeout: 30000});
+          job = await api(`/api/uploads/${encodeURIComponent(sourceUploadId)}/extractions`, {method: "POST", headers: {"Idempotency-Key": key, ...consentHeaders}, timeout: 30000});
         } catch (error) {
           if (error.status === 404) {
             clearExtractionJob();
@@ -451,7 +490,7 @@ function extractUpload() {
         rememberExtractionJob(job.job_id, sourceUploadId);
       }
       await pollExtraction(state.job);
-    } finally { state.extracting = false; renderExtraction(); controls(); }
+    } finally { $("external-ai-consent").checked = false; state.extracting = false; renderExtraction(); controls(); }
   }, extractUpload);
 }
 
@@ -524,7 +563,7 @@ function renderDocuments() {
     const card = element("article", "document-card");
     card.append(element("span", "document-role", ROLES[doc.role] || doc.role), element("h3", "", doc.title || doc.id));
     const facts = element("dl", "document-facts");
-    const method = ({text_pending_ai: "AI 근거 추출 전", local_tool_rag: "AI 근거 추출 처리됨"})[doc.extraction_method] || "정형 문서 읽기";
+    const method = state.upload.ai_execution?.execution_mode === "injected" ? "시험 대역 추출 · 실제 제공자 호출 아님" : ({text_pending_ai: "AI 근거 추출 전", local_tool_rag: "Ollama 근거 추출 기록", openai_tool_rag: "OpenAI 근거 추출 기록", injected_extraction: "시험 대역 추출", guarded_tool_rag: "AI 근거 추출 기록"})[doc.extraction_method] || (state.upload.mode === "text_ai" ? "AI 추출 출처 확인 필요" : "정형 문서 읽기");
     const customer = Array.isArray(state.upload.customer_check?.documents) ? state.upload.customer_check.documents.find((item) => item.document_id === doc.id) : null;
     for (const [label, value] of [["문서 ID", doc.id], ["프로젝트", doc.project_id], ["고객사 원문", customerNameText(doc.customer_name ?? customer?.raw_name)], ["고객사 등록명", customer?.canonical_name || "확인되지 않음"], ["고객사 식별", customerStatusText(customer?.status)], ["승인 표기", doc.status === "approved" ? "승인됨 (입력 표기)" : "미승인 / 확인 필요"], ["승인자 표기", doc.approved_by || "표기 없음"], ["대체 대상", doc.supersedes || "해당 없음"], ["문서 분량", Number.isInteger(doc.page_count) ? `${doc.page_count}쪽` : "확인 필요"], ["처리 방식", method]]) facts.append(element("dt", "", label), element("dd", "", value || "확인 필요"));
     card.append(facts);
@@ -639,6 +678,7 @@ function renderReview() {
   $("results-empty").hidden = Boolean(state.review); $("results-content").hidden = !state.review;
   if (!state.review) { setText("review-badge", "검토 대기"); return; }
   const review = state.review;
+  setText("review-ai-origin", `이 저장 검토의 추출 출처: ${review.extraction_method === "synthetic_template_text" ? "정형 PDF · 추출 AI 호출 없음" : savedExecutionLabel(Object.prototype.hasOwnProperty.call(review, "ai_execution") ? review.ai_execution : review.extraction_report?.ai_execution)}. 현재 서버 설정과 구분합니다.`);
   const fields = new Set(review.results.map((row) => row.field));
   const missing = Object.keys(CURRENT_FIELDS).filter((field) => !fields.has(field));
   const currentScope = hasCurrentReviewFields(review);
@@ -752,9 +792,10 @@ function explainReview() {
     showError(new Error(explainBlockedMessage(state.review)));
     return;
   }
-  return perform("로컬 AI가 옮긴 항목 정보와 기준 사실이 같은지 확인하고 있습니다. 시간이 걸릴 수 있습니다…", async () => {
+  return perform("AI가 옮긴 항목 정보와 기준 사실이 같은지 확인하고 있습니다. 시간이 걸릴 수 있습니다…", async () => {
     try {
-      const payload = await api(`/api/reviews/${encodeURIComponent(state.review.review_id)}/explain`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({use_ai: true}), timeout: 240000});
+      const consentHeaders = aiRequestHeaders();
+      const payload = await api(`/api/reviews/${encodeURIComponent(state.review.review_id)}/explain`, {method: "POST", headers: {"Content-Type": "application/json", ...consentHeaders}, body: JSON.stringify({use_ai: true}), timeout: 240000});
       if (!Array.isArray(payload.items)) throw new Error("AI 구조 확인 응답의 형식이 올바르지 않습니다.");
       state.explanations.clear();
       for (const item of payload.items) if (["code", "ai_verified"].includes(item.origin) && typeof item.text === "string") state.explanations.set(item.field, item);
@@ -774,14 +815,14 @@ function explainReview() {
         heading = "AI 구조 확인을 적용하지 않고 기존 코드 설명을 유지합니다.";
       }
       $("ai-note").className = `ai-note${fallback ? " fallback" : ""}`;
-      setText("ai-note", `${heading} ${payload.note || (payload.llm_attempted ? "항목을 선택해 설명과 근거를 확인하세요." : "모델 호출이 수행되지 않았습니다.")}`);
+      setText("ai-note", `${heading} 설명 실행 출처: ${savedExecutionLabel(payload.ai_execution)}. ${payload.note || (payload.llm_attempted ? "항목을 선택해 설명과 근거를 확인하세요." : "모델 호출이 수행되지 않았습니다.")}`);
       $("ai-note").hidden = false; renderEvidence();
     } catch (error) {
       state.explanations.clear(); renderEvidence();
       $("ai-note").className = "ai-note fallback";
       setText("ai-note", `AI 구조 확인을 완료하지 못해 기존 코드 설명을 유지합니다. ${error.message}`); $("ai-note").hidden = false;
       throw error;
-    }
+    } finally { $("external-ai-consent").checked = false; controls(); }
   }, explainReview);
 }
 function exportReview() {
@@ -815,6 +856,7 @@ function openReviewReport() {
   }
 }
 async function restoreState() {
+  $("external-ai-consent").checked = false;
   const uploadId = recalled(STORAGE.upload);
   const reviewId = recalled(STORAGE.review);
   const storedJob = recalled(STORAGE.job);
@@ -902,6 +944,7 @@ $("export-confirmed").addEventListener("change", controls);
 $("export-button").addEventListener("click", exportReview);
 $("report-button").addEventListener("click", openReviewReport);
 $("explain-button").addEventListener("click", explainReview);
+$("external-ai-consent").addEventListener("change", controls);
 $("filter-all").addEventListener("click", () => { state.filter = "all"; renderTable(); });
 $("filter-attention").addEventListener("click", () => { state.filter = "attention"; renderTable(); });
 $("error-dismiss").addEventListener("click", clearError);

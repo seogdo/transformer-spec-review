@@ -82,6 +82,48 @@ class ExtractionAgentTests(unittest.TestCase):
     def assertUncertain(self, entry):
         self.assertEqual(entry["value"], ["EXTRACTION_UNCERTAIN"])
 
+    def test_openai_dispatch_uses_config_snapshot_and_existing_evidence_guards(self):
+        config = agent.AIConfig("openai", "explicit-test-model")
+        changed = deepcopy(self.proposals)
+        changed[-1]["value"] = "999"
+        with patch.object(agent, "openai_request", side_effect=[plan_for(self.documents), {"items": changed}]) as api, patch.object(agent, "_local_request") as local:
+            result = agent.extract_upload(self.documents, ai_config=config)
+        self.assertEqual(api.call_count, 2)
+        local.assert_not_called()
+        self.assertEqual(api.call_args.args[0], config)
+        self.assertEqual(api.call_args.args[1]["model"], config.model)
+        self.assertEqual(result["method"], "openai_tool_rag")
+        self.assertEqual(result["ai_execution"]["calls_attempted"], 2)
+        self.assertEqual(result["ai_execution"]["calls_succeeded"], 2)
+        self.assertEqual(result["ai_execution"]["execution_mode"], "live_request")
+        self.assertTrue(result["ai_execution"]["external_processing"])
+        self.assertUncertain(field_of(result))
+
+    def test_injected_openai_config_is_not_claimed_as_real_api_execution(self):
+        request = MagicMock(side_effect=[plan_for(self.documents), {"items": self.proposals}])
+        with patch.object(agent, "openai_request") as api:
+            result = agent.extract_upload(self.documents, request, ai_config=agent.AIConfig("openai", "explicit-test-model"))
+        api.assert_not_called()
+        self.assertEqual(result["ai_execution"]["execution_mode"], "injected")
+        self.assertFalse(result["ai_execution"]["external_processing"])
+
+    def test_openai_failure_is_not_success_and_never_falls_back(self):
+        with patch.object(agent, "openai_request", side_effect=OSError("synthetic secret must not leak")), patch.object(agent, "_local_request") as local:
+            result = agent.extract_upload(self.documents, ai_config=agent.AIConfig("openai", "explicit-model"))
+        local.assert_not_called()
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(result["ai_execution"]["calls_succeeded"], 0)
+        self.assertEqual(result["ai_execution"]["calls_attempted"], 1)
+        self.assertNotIn("synthetic secret", json.dumps(result))
+        self.assertTrue(any(row["code"] == "OPENAI_UNAVAILABLE" for row in result["warnings"]))
+
+    def test_ollama_config_changes_payload_without_mutating_global_model(self):
+        with patch.object(agent, "_local_request", side_effect=[plan_for(self.documents), {"items": self.proposals}]) as local:
+            result = agent.extract_upload(self.documents, ai_config=agent.AIConfig("ollama", "chosen:2b"))
+        self.assertEqual(local.call_args.args[0]["model"], "chosen:2b")
+        self.assertEqual(agent.MODEL, "qwen3.5:2b")
+        self.assertEqual(result["ai_execution"]["model"], "chosen:2b")
+
     def test_two_calls_execute_search_and_accept_literal_values(self):
         before = deepcopy(self.documents)
         result, request = run_with(self.documents, self.proposals)

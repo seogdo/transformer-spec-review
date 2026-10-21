@@ -1,13 +1,15 @@
 """Fail-closed explanations for deterministic, source-linked review results.
 
-The optional local model does not decide whether a specification is correct. It
+The optional model does not decide whether a specification is correct. It
 may only return a structured plan that exactly repeats the engine's fixed sets
 of facts. Every visible sentence is rendered by this module, never taken from
 model prose. ``ai_verified`` therefore describes plan consistency, not an
 independent accuracy measurement or an engineering approval.
 
-No model is downloaded or started here. No API keys, external hosts, redirects,
-environment proxies, document text, or fixture answer labels are used.
+No model is downloaded or started here. The startup-selected OpenAI backend
+sends only derived facts (not original document quotes) to its fixed API origin.
+Keys, redirects, proxies and fixture answer labels are never exposed or used as
+evidence. Ollama retains its loopback-only transport.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .contracts import FIELD_KEYS, STATUSES
+from .llm_backend import AIConfig, PlanRejected, execution_info, get_ai_config, openai_request, strict_json as _strict_json
 
 MODEL = "qwen3.5:2b"
 TIMEOUT_SECONDS = 20.0
@@ -33,10 +36,6 @@ NOTE = (
     "표시 설명은 코드의 고정 서식입니다. AI 선택 시 구조화된 제안의 값·상태·이유 식별자·출처가 "
     "코드 판정과 정확히 일치하는지만 확인합니다. AI 독립 정확도 평가나 공학적 승인 결과가 아닙니다."
 )
-
-
-class PlanRejected(ValueError):
-    """The model response cannot be accepted as an exact structured plan."""
 
 
 def _endpoint(raw: str) -> tuple[str, int]:
@@ -63,25 +62,6 @@ def _endpoint(raw: str) -> tuple[str, int]:
     ):
         raise ValueError("Ollama는 명시적인 loopback HTTP 주소만 사용할 수 있습니다.")
     return parsed.hostname, port
-
-
-def _strict_json(raw: str | bytes) -> Any:
-    """Reject duplicate keys/non-finite constants rather than silently replacing."""
-    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise PlanRejected("JSON key 중복")
-            result[key] = value
-        return result
-
-    def no_constant(value: str) -> None:
-        raise PlanRejected("유한하지 않은 JSON 값")
-
-    try:
-        return json.loads(raw, object_pairs_hook=unique, parse_constant=no_constant)
-    except (ValueError, UnicodeError, RecursionError) as exc:
-        raise PlanRejected("JSON 구조를 확인할 수 없습니다.") from exc
 
 
 def _value_text(value: Any) -> str:
@@ -164,18 +144,9 @@ def _schema() -> dict[str, Any]:
     }
 
 
-def _request_plan(facts: list[dict[str, Any]], base_url: str) -> Any:
-    """Call local Ollama once with bounded output; do not retry/download/start.
-
-    The socket timeout and remaining time budget are set before each transport
-    stage/read. A deadline timer also shuts down the active socket so a peer
-    dripping response headers cannot reset the timeout indefinitely. Reading
-    small single buffered chunks prevents unbounded memory allocation. A
-    non-200 response, including 3xx, is never followed.
-    """
-    host, port = _endpoint(base_url)
-    payload = {
-        "model": MODEL, "stream": False, "think": False, "format": _schema(),
+def _plan_payload(facts: list[dict[str, Any]], model: str = MODEL) -> dict[str, Any]:
+    return {
+        "model": model, "stream": False, "think": False, "format": _schema(),
         "messages": [
             {"role": "system", "content": (
                 "Return only JSON with items. Copy all supplied structured facts exactly, once per field. "
@@ -187,6 +158,19 @@ def _request_plan(facts: list[dict[str, Any]], base_url: str) -> Any:
         "options": {"temperature": 0, "num_ctx": 8192, "num_predict": 180 * len(FIELD_KEYS)},
         "keep_alive": "0s",
     }
+
+
+def _request_plan(facts: list[dict[str, Any]], base_url: str, *, model: str = MODEL) -> Any:
+    """Call local Ollama once with bounded output; do not retry/download/start.
+
+    The socket timeout and remaining time budget are set before each transport
+    stage/read. A deadline timer also shuts down the active socket so a peer
+    dripping response headers cannot reset the timeout indefinitely. Reading
+    small single buffered chunks prevents unbounded memory allocation. A
+    non-200 response, including 3xx, is never followed.
+    """
+    host, port = _endpoint(base_url)
+    payload = _plan_payload(facts, model)
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     if len(body) > MAX_REQUEST_BYTES:
         raise ValueError("로컬 AI 요청 크기 제한을 초과했습니다.")
@@ -280,8 +264,8 @@ def _validate_plan(plan: Any, facts: list[dict[str, Any]]) -> dict[str, bool]:
     return {fact["field"]: by_field[fact["field"]] == fact for fact in facts}
 
 
-def explain_review(review: dict[str, Any], use_ai: bool = False) -> dict[str, Any]:
-    """Return safe explanations; an absent/bad local model cannot alter facts.
+def explain_review(review: dict[str, Any], use_ai: bool = False, *, ai_config: AIConfig | None = None) -> dict[str, Any]:
+    """Return safe explanations; an absent/bad model cannot alter facts.
 
     With ``use_ai=False`` (the default) no environment URL or network is read.
     When enabled, a failed response becomes ``unavailable``; invalid plans become
@@ -289,10 +273,24 @@ def explain_review(review: dict[str, Any], use_ai: bool = False) -> dict[str, An
     output and transport error strings are intentionally not exposed to users.
     """
     facts, rows = _facts(review)
+    config = ai_config if ai_config is not None else get_ai_config()
+    execution = execution_info(config, requested=bool(use_ai))
     decisions = {key: "not_requested" for key in FIELD_KEYS}
     if use_ai:
         try:
-            plan = _request_plan(facts, os.environ.get("HANDOFF_OLLAMA_URL", DEFAULT_URL))
+            execution["calls_attempted"] += 1
+            if config.provider == "openai":
+                payload = _plan_payload(facts, config.model)
+                if len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) > MAX_REQUEST_BYTES:
+                    raise ValueError("AI 요청 크기 제한을 초과했습니다.")
+                plan = openai_request(config, payload, TIMEOUT_SECONDS)
+            else:
+                base_url = os.environ.get("HANDOFF_OLLAMA_URL", DEFAULT_URL)
+                # Retain the original two-argument default call for existing DI
+                # test doubles. Only an explicit model override needs the kwarg.
+                plan = (_request_plan(facts, base_url) if config.model == MODEL
+                        else _request_plan(facts, base_url, model=config.model))
+            execution["calls_succeeded"] += 1
             checks = _validate_plan(plan, facts)
             decisions = {key: "accepted" if checks[key] else "rejected" for key in FIELD_KEYS}
         except PlanRejected:
@@ -301,6 +299,7 @@ def explain_review(review: dict[str, Any], use_ai: bool = False) -> dict[str, An
             decisions = {key: "unavailable" for key in FIELD_KEYS}
     return {
         "llm_attempted": bool(use_ai),
+        "ai_execution": execution,
         "items": [
             {"field": key, "text": _render(rows[key]),
              "origin": "ai_verified" if decisions[key] == "accepted" else "code",
