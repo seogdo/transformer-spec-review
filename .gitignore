@@ -18,6 +18,7 @@ reports/runtime/
 reports/*
 !reports/fresh-evaluation-20261020T134647-008a1935.result.json
 !reports/evidence-before-after-20261020T111053Z-4e8705ae.json
+!reports/openai-validation-20261021.json
 *.pem
 *.key
 *.p12

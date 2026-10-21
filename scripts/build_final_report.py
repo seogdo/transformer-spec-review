@@ -148,7 +148,7 @@ def build(args: argparse.Namespace) -> None:
         p("검토하는 기술사양 10개", "h2"),
         p("정격용량 · 고압측 전압 · 저압측 전압 · 주파수 · 상수 · 결선 그룹 · "
           "냉각 방식 · 팬 보조전원 전압 · 탭절환기 방식 · 옥내형/옥외형"),
-        p("제출 자료  |  2026년 10월 21일\n"
+        p(f"OpenAI 실행 확인  |  {args.verified_at}\n"
           "https://github.com/seogdo/transformer-spec-review", "small"),
         PageBreak(),
         p("01  구현 구조", "small"),
@@ -167,17 +167,19 @@ def build(args: argparse.Namespace) -> None:
         p("설명용 흐름과 구현 기술의 구분", "h2"),
         p("단일 워크플로의 순차 실행·분기를 직접 구현했습니다. LangGraph 실행 엔진이나 "
           "Multi-Agent 구조가 아닙니다. 정형 모드는 AI 없이 코드 파서에서 비교로 이어지는 별도 경로입니다."),
-        p("extract_upload:573 / 검색계획:613 / 검색 실행:621 / 값 제안:632 / 검증:672행입니다. "
-          "추출 한 번의 AI 요청은 최대 2회·전체 90초입니다. 별도 선택 기능인 AI 구조 확인은 추가 호출입니다.", "small"),
+        p("extract_upload:574 / 검색계획:624 / 검색 실행:632 / 값 제안:643 / 검증:683행입니다. "
+          "추출 한 번의 AI 요청은 최대 2회·전체 90초입니다. OpenAI 외부 전송·과금 동의를 확인하고 "
+          "실행하며, 자동 재시도·제공자 전환은 없습니다. 별도 선택 설명은 추가 호출입니다.", "small"),
         PageBreak(),
         p("02  대표 시연", "small"),
         p("440 V 요구와 380 V 인계를\n원문으로 확인합니다", "title"),
         p("V01 가상 변경 합의서에는 팬 보조전원이 440 V로 바뀌었지만, "
-          "내부 인계표에는 380 V가 남아 있습니다. 실제 로컬 AI 시험에서 "
+          "내부 인계표에는 380 V가 남아 있습니다. 실제 OpenAI API 시험에서 "
           "10개 항목 중 9개 일치와 1개 불일치가 표시됐습니다."),
-        screenshot(ROOT / "output/live-browser-v01-result.png", 310),
+        screenshot(ROOT / "output/openai-v01-result.png", 310),
         Spacer(1, 9),
-        p("가상 PDF로 수행한 사전 실제 실행 화면입니다. 회사 문서나 실시간 운영 화면이 아닙니다.", "small"),
+        p(f"OpenAI / {args.ai_model} / {args.verified_at}의 저장된 실제 실행 결과 요약입니다. "
+          "제안 21개 중 21개가 코드의 원문 검증을 통과했습니다. 회사 문서나 운영 화면은 아닙니다.", "small"),
         p("담당자가 확인할 수 있는 정보", "h2"),
         p("요구값과 인계값, 적용된 변경, 문서명·페이지·인용문을 함께 제공합니다. "
           "원본 PDF를 열어 추출 내용과 대조할 수 있으며, 보류된 후보 근거는 확정값과 구분합니다."),
@@ -190,16 +192,19 @@ def build(args: argparse.Namespace) -> None:
         grid([
             ["시험", "확인 결과"],
             ["Python 자동 검사", f"{args.python_tests}개 통과. 처리 규칙·오류 처리·보고서의 저장 결과 보존 등을 검사했습니다."],
-            ["화면 모의 검사", f"기존 근거 12개, 복구 39개, 보고서 {args.report_ui_tests}개 통과. 실제 브라우저 시험과는 별도입니다."],
-            ["V01 실제 AI", "21개 추출값이 코드의 원문 대조를 통과했습니다. 항목 판정은 9개 일치·1개 불일치였습니다."],
-            ["V02 실제 화면", args.v02],
-            ["V03 실제 화면", args.v03],
-            ["회의용 보고서", args.print_check],
+            ["화면 모의 검사", f"근거 12개, 복구 {args.recovery_ui_tests}개, 보고서 {args.report_ui_tests}개 통과. 실제 브라우저 시험과는 별도입니다."],
+            ["OpenAI V01", "21개 제안 중 21개가 원문 검증을 통과했습니다. 9개 일치·1개 불일치입니다."],
+            ["OpenAI V02", args.v02],
+            ["OpenAI V03", args.v03],
+            ["기존 회의 보고서", args.print_check],
         ], [100, WIDTH - 100]),
         p("결과 해석", "h2"),
-        p("이번 자동·화면 모의 재검증은 실제 모델을 추가 호출하지 않았습니다. "
-          "모든 시연 문서는 직접 구성한 가상 개발 자료입니다. 자동 검사 개수는 모델 정확도가 "
-          "아니며, 이 결과를 실제 회사 문서의 정확도나 시간 절감률로 해석하지 않습니다."),
+        p(f"자동·화면 모의 검사와 별도로 OpenAI {args.ai_model}을 실제 호출했습니다. "
+          "V01~V03은 각 2회, 총 6회 요청이 성공했습니다. "
+          "모든 시연 문서는 직접 구성한 가상 개발 자료입니다. 코드 검증 통과 수와 모델의 독립 정확도는 "
+          "다르며, 이 결과를 실제 회사 문서의 정확도나 시간 절감률로 해석하지 않습니다. "
+          "기존 Ollama 실행·인쇄 기록은 새 OpenAI 결과와 구분합니다."),
+        p("새 실제 실행 요약: reports/openai-validation-20261021.json", "small"),
         p("현재 제한과 배운 점", "h2"),
         p("지정 메타데이터와 가상 자료 선언이 있는 텍스트 PDF 3종을 지원합니다. "
           "파일당 5 MiB·20쪽 제한이 있으며 스캔·OCR·도면·다제품 문서는 지원하지 않습니다. "
@@ -209,21 +214,26 @@ def build(args: argparse.Namespace) -> None:
           "서로 구분해야 했습니다. 후속 개선은 실제 문서의 독립 평가, 승인 이력·접근 권한 연결, "
           "검색 방식과 호출 수의 동일 입력 비교입니다."),
         PageBreak(),
-        p("04  최종 산출 화면과 실행 안내", "small"),
-        p("검토 결과를\n회의 자료로 연결했습니다", "title"),
-        p("결과와 원문을 사람이 확인한 뒤 회의용 보고서를 열 수 있습니다. 저장된 판정·값·근거를 "
-          "그대로 표시하며 AI를 다시 호출하거나 기존 기록을 변경하지 않습니다."),
-        screenshot(ROOT / "output/meeting-report-preview.png", 265),
+        p("04  추가 실행 화면과 결과 보관", "small"),
+        p("미기재와 사양 차이를\n서로 구분했습니다", "title"),
+        Table([
+            [p("V02  미기재 보류", "h2"), p("V03  사양 불일치", "h2")],
+            [screenshot(ROOT / "output/openai-v02-result.png", 300),
+             screenshot(ROOT / "output/openai-v03-result.png", 300)],
+            [p(args.v02, "small"), p(args.v03, "small")],
+        ], colWidths=[WIDTH / 2, WIDTH / 2], hAlign="LEFT",
+            style=[("VALIGN", (0, 0), (-1, -1), "TOP"),
+                   ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                   ("RIGHTPADDING", (0, 0), (-1, -1), 6)]),
         Spacer(1, 8),
-        p("최종 기능 캡처: V03 저장 결과가 연결된 회의용 보고서입니다. 인쇄 버튼으로 브라우저 인쇄 창을 열며, "
-          "PDF 저장은 해당 브라우저에서 지원할 때 사용할 수 있습니다.", "small"),
-        p("시연 순서", "h2"),
+        p(f"두 화면은 OpenAI {args.ai_model}의 새 실행 결과를 조회한 캡처입니다. 결과와 원문을 확인한 뒤 "
+          "회의용 보고서를 열거나 JSON을 내려받습니다. 조회·보고서 인쇄는 AI를 다시 호출하지 않습니다.", "small"),
+        p("시연과 제출", "h2"),
         p("앱 실행 → V01 선택 → AI 추출 → 변경 기준 확인 → 10개 항목 비교 → "
-          "불일치의 양쪽 원문 확인 → 사람 검토 확인 → 회의용 보고서 열기입니다."),
-        p("설치·실행·검증과 전체 소스", "h2"),
-        p("https://github.com/seogdo/transformer-spec-review"),
-        p("README에 실행 방법을, docs/presentation-demo.md에 발표 대본과 오류 발생 시 "
-          "대체 시연 순서를 정리했습니다. 회사 문서·강의 원본·API 키·모델 가중치는 공개 자료에서 제외했습니다.", "small"),
+          "불일치의 양쪽 원문 확인 → 사람 검토 확인 → 회의용 보고서 열기입니다.", "small"),
+        p("https://github.com/seogdo/transformer-spec-review\n"
+          "README의 실행 방법과 docs/presentation-demo.md의 시연 순서를 확인합니다. "
+          "회사 문서·강의 원본·API 키는 공개 자료에서 제외했습니다.", "small"),
         p("제출 시트의 E열에는 공개 저장소, F열에는 최종 보고서 공개 주소를 입력해야 합니다. "
           "파일 작성·공개와 시트 제출 완료는 별도이며, 보고서 작성 시점에는 시트 입력을 수행하지 않았습니다.", "small"),
         PageBreak(),
@@ -231,21 +241,21 @@ def build(args: argparse.Namespace) -> None:
         p("사용한 기술과\n사용하지 않은 기술을 구분합니다", "title"),
         grid([
             ["구분", "실제 적용 내용"],
-            ["RAG · 로컬 AI", "Ollama·qwen3.5:2b의 계획·값 제안 + 키워드·별칭 근거 검색입니다. 벡터 검색은 아닙니다."],
+            ["RAG · AI 연결", f"OpenAI {args.ai_model}의 계획·값 제안과 키워드·별칭 근거 검색입니다. Ollama 선택 실행도 지원하며, 벡터 검색은 아닙니다."],
             ["DI · 모듈화", "request_fn 함수 주입을 사용합니다. PDF 읽기·추출·고객사 확인·단위 처리·비교·웹·보고서를 분리했습니다."],
-            ["검사 · 기록", f"Python {args.python_tests}개, 화면 모의 {12 + 39 + args.report_ui_tests}개 통과 기록입니다. 단계별 trace는 직접 작성한 로컬 기록입니다."],
+            ["검사 · 기록", f"Python {args.python_tests}개, 화면 모의 {12 + args.recovery_ui_tests + args.report_ui_tests}개 통과 기록입니다. 단계별 trace와 실행 제공자·모델을 기록합니다."],
             ["웹 · 저장", "Python·FastAPI, HTML·CSS·JavaScript, 로컬 JSON입니다. 공개 저장소는 소스 공유이며 운영 서비스 배포가 아닙니다."],
             ["미구현", "Multi-Agent, MCP, LangGraph, LangSmith, 임베딩·벡터 DB, 네이티브 도구 호출은 사용하지 않았습니다."],
         ], [90, WIDTH - 90]),
         p("DI: 실제 요청과 시험 응답을 분리했습니다", "h2"),
-        p("extract_upload(documents, request_fn=None)의 593-594행입니다. 주입 함수가 없으면 "
-          "실제 로컬 요청을 사용합니다. 아래 시험은 계획·값 제안을 고정 응답으로 주입합니다.", "small"),
-        code_excerpt("src/handoff_review/extraction_agent.py", 593, 594),
+        p("extract_upload의 600-602행입니다. 주입 함수가 없으면 서버 시작 때 고른 OpenAI 또는 "
+          "Ollama 요청을 사용합니다. 시험에서는 계획·값 제안을 고정 응답으로 주입합니다.", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 600, 602),
         Spacer(1, 8),
         p("tests/test_extraction_agent.py 69-71행", "small"),
         code_excerpt("tests/test_extraction_agent.py", 69, 71),
         Spacer(1, 8),
-        p("같은 파일 85-103행에서 2회 호출, 검색 결과의 다음 요청 전달, 원문·메타데이터 보존을 "
+        p("같은 파일 127-145행에서 2회 호출, 검색 결과의 다음 요청 전달, 원문·메타데이터 보존을 "
           "검사합니다. 가짜 응답 검사는 모델 정확도 평가가 아닙니다. 공지에 열거된 기술을 모두 "
           "사용했다고 표시하지 않고 적용 여부를 공개합니다.", "small"),
         p("5분 발표 구성", "h2"),
@@ -258,16 +268,16 @@ def build(args: argparse.Namespace) -> None:
           "아래는 현재 저장소에서 직접 읽은 실제 코드이며 전체 함수 중 핵심 부분입니다. "
           "가독성을 위해 공통 들여쓰기만 제거했습니다."),
         p("키워드 점수와 원문 위치를 보존하는 검색", "h2"),
-        p("src/handoff_review/extraction_agent.py  _search_documents 314-325행", "small"),
-        code_excerpt("src/handoff_review/extraction_agent.py", 314, 325),
+        p("src/handoff_review/extraction_agent.py  _search_documents 315-326행", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 315, 326),
         Spacer(1, 8),
         p("처리: 항목 별칭으로 찾은 원문 후보에 검색어 포함 점수를 부여하고, "
           "점수·페이지·원문 위치 순으로 정렬했습니다. 검색 요청별 상위 2개를 문자 예산 안에서 반환합니다.\n"
           "출력: 문서 ID, 항목, 페이지, 원문, 청크 ID입니다. 검색 실패는 정답이 없다는 뜻이 아니므로 "
           "미확정 항목을 임의 값으로 채우지 않습니다.", "small"),
         p("값과 단위가 인용문에도 존재하는지 검증", "h2"),
-        p("src/handoff_review/extraction_agent.py  _validate_proposal 544-551행", "small"),
-        code_excerpt("src/handoff_review/extraction_agent.py", 544, 551),
+        p("src/handoff_review/extraction_agent.py  _validate_proposal 545-552행", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 545, 552),
         Spacer(1, 8),
         p("입력: AI가 제안한 값·단위·인용문과 원문에서 읽은 토큰입니다. 숫자 항목은 "
           "추출 단계에서 단위를 바꿔 제안하지 못하도록 했습니다.\n"
@@ -287,7 +297,7 @@ def build(args: argparse.Namespace) -> None:
         p("기술 선택 근거와 트레이드오프", "h2"),
         grid([
             ["선택", "선택 이유", "감수한 제한"],
-            ["로컬 소형 LLM", "API 키 없이 값·근거 제안을 시험했습니다.", "실행 환경과 모델 품질에 영향을 받으며 정답을 보장하지 않습니다."],
+            ["OpenAI / Ollama", "공통 검증·비교 코드를 두 실행 방식에서 재사용합니다.", "OpenAI는 외부 처리·과금 동의가 필요합니다. 두 방식의 품질 우열은 측정하지 않았습니다."],
             ["키워드·별칭 검색", "고정 10항목에서 검색 근거와 경로를 추적하기 쉽습니다.", "임베딩 의미 검색이 아니며 새로운 표현을 놓칠 수 있습니다."],
             ["코드 기반 판정", "단위·조건·변경 관계를 명시 규칙으로 비교했습니다.", "지원하지 않는 단위·조건·모호한 값은 보류합니다."],
             ["로컬 웹·JSON 저장", "설치 범위를 줄이고 검토 기록을 보존·복원했습니다.", "다중 사용자 인증·운영 DB·공개 서비스 보안은 별도 과제입니다."],
@@ -317,12 +327,13 @@ def build(args: argparse.Namespace) -> None:
             PageBreak(),
             p("부록 A  선택 비교  |  저장 응답 재생", "small"),
             p("판정은 유지하고\n충돌 근거를 보완했습니다", "title"),
-            p("F04 가상 인계표에는 팬 전원이 400 V와 440 V로 함께 기재돼 있습니다. "
+            p("기존 Ollama F01~F06 개발 기록 중 F04의 역사적 비교입니다. 가상 인계표에는 팬 전원이 "
+              "400 V와 440 V로 함께 기재돼 있습니다. "
               "이전 결과는 판정을 보류했지만 인계표 근거 하나만 연결했습니다. "
               "보완 후에는 충돌하는 두 원문을 함께 보여주도록 했습니다."),
             grid([
                 ["동일 F04 입력의 비교 항목", "Before", "After"],
-                ["비교 방식", "개발 중 보존한 이전 결과입니다.", "현재 코드에 저장된 AI 응답을 재생했습니다."],
+                ["비교 방식", "개발 중 보존한 이전 결과입니다.", "2026-10-20 보완 코드로 저장된 응답을 재생했습니다."],
                 ["팬 항목의 인계표 근거 수",
                  f"{before['handoff_unique_source_count']}개",
                  f"{after['handoff_unique_source_count']}개"],
@@ -339,23 +350,21 @@ def build(args: argparse.Namespace) -> None:
               "판정을 확정할 수 있다는 사실을 분리했습니다. 판정은 보류로 유지하고 "
               "evidence_complete는 true에서 false로 바로잡았습니다."),
             p("측정 방법과 해석의 한계", "h2"),
-            p(f"현재 재생에서 기록된 모델 응답은 {replay['captured_response_replay_calls']}회 사용했고 "
+            p(f"당시 재생에서 기록된 모델 응답은 {replay['captured_response_replay_calls']}회 사용했고 "
               "실제 모델 통신은 0회였습니다. 변경 전 코드를 다시 실행한 동시 실험이 아니라, "
-              "이전 저장 기준과 현재 코드 재생 결과를 대조한 개발 회귀 비교입니다."),
+              "이전 저장 기준과 당시 보완 코드의 재생 결과를 대조한 개발 회귀 비교입니다. OpenAI 시험이 아닙니다."),
             p("같은 문서·같은 기록된 모델 응답·같은 항목 지표로 후처리의 차이를 확인했습니다. "
               "보류가 늘거나 줄어드는 모델 성능 평가, 독립 정확도, 실제 AI 속도·업무 시간 절감의 "
               "개선으로 해석하지 않습니다. 사용한 F04는 독립 미사용 시험 자료가 아닙니다."),
             p("400 V와 440 V는 기존 모델 응답에 이미 있었습니다. 이번 차이는 AI 추출 능력이 아니라 "
-              "근거 표시 보완입니다. 현재 요청 내용은 현재 코드가 만들었으며, 구버전 재실행이나 "
+              "근거 표시 보완입니다. 재생 요청은 당시 보완 코드가 만들었으며, 구버전 재실행이나 "
               "수업 보너스 조건 충족을 확정한 결과는 아닙니다.", "small"),
             p("측정 기록", "h2"),
             p(report_path, "small"),
-            p("입력·저장 응답·비교 기준·원본 보존 여부는 측정 JSON에 기록했습니다. "
-              "정답을 모델에 다시 보내거나 원본 보고서를 수정한 결과가 아닙니다.", "small"),
             PageBreak(),
             p("부록 B  보완 후 화면  |  전후 UI 쌍 비교 아님", "small"),
             p("보류된 두 원문을\n함께 보여주는 화면입니다", "title"),
-            p("F04 보완 후에 저장한 실제 UI 캡처입니다. 고객 사양 400 V와 인계표의 400 V·440 V를 "
+            p("기존 Ollama F04 보완 후에 저장한 실제 UI 캡처입니다. 고객 사양 400 V와 인계표의 400 V·440 V를 "
               "함께 표시하되 판정은 확인 필요로 유지했습니다. 수정 전 UI 캡처는 보존돼 있지 않습니다.", "small"),
             p("동일한 보완 후 캡처의 상태 요약과 두 인계표 근거를 확대 발췌했습니다.", "small"),
             screenshot_region(ROOT / "output/evidence-conflict-fix.png", 0, 0.10),
@@ -366,7 +375,7 @@ def build(args: argparse.Namespace) -> None:
             p("같은 인계표 1쪽의 두 번째 원문 후보", "small"),
             screenshot_region(ROOT / "output/evidence-conflict-fix.png", 0.835, 0.98),
             Spacer(1, 8),
-            p("이 화면은 보완 후 동작 증거입니다. 앞쪽 표는 과거 저장 결과와 현재 코드의 저장 응답 재생 비교이며, "
+            p("이 화면은 과거 보완 후 동작 증거이며 OpenAI 결과가 아닙니다. 앞쪽 표는 과거 저장 결과와 당시 코드의 응답 재생 비교이며, "
               "구버전·신버전을 각각 새로 실행한 성능 비교나 전후 화면 비교가 아닙니다. 선택 보너스 충족을 확정하지 않습니다.", "small"),
         ])
         expected_pages = 10
@@ -402,7 +411,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--font", type=Path, required=True)
     parser.add_argument("--python-tests", type=int, required=True)
+    parser.add_argument("--recovery-ui-tests", type=int, required=True)
     parser.add_argument("--report-ui-tests", type=int, required=True)
+    parser.add_argument("--ai-model", required=True, help="Verified OpenAI model name, never a credential.")
+    parser.add_argument("--verified-at", required=True, help="Date of the actual OpenAI validation.")
     parser.add_argument("--v02", required=True)
     parser.add_argument("--v03", required=True)
     parser.add_argument("--print-check", required=True)

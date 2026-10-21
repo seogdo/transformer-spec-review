@@ -1,0 +1,553 @@
+{
+  "schema_version": "openai-synthetic-validation-v1",
+  "validation_date": "2026-10-21",
+  "execution_code_commit": "887da6ea4c85586d74c34608f8432194d85b5836",
+  "scope": "실제 OpenAI 요청으로 수행한 V01~V03 가상 개발 사례 검증. 독립 홀드아웃·현업 자료·일반 정확도 평가가 아닙니다.",
+  "synthetic_only": true,
+  "evidence_method": "저장된 추출 작업 및 검토 기록을 읽기 전용으로 대조했습니다. 공개 PDF 바이트의 SHA-256, 작성된 기대 판정, 실행 출처, 승인 변경 정책, 원문 연결 메타데이터를 확인했으며 이 요약 작성 과정에서 추가 AI 요청은 하지 않았습니다.",
+  "public_evidence_policy": {
+    "includes": [
+      "published_source_paths_and_sha256",
+      "saved_utc_execution_timestamps",
+      "allowlisted_execution_metadata",
+      "case_counts_statuses_and_evidence_quotes"
+    ],
+    "excludes": [
+      "credentials_and_authentication_data",
+      "runtime_record_identifiers",
+      "private_local_paths",
+      "request_headers"
+    ],
+    "original_runtime_records_published": false
+  },
+  "reference_files": [
+    {
+      "path": "output/pdf/varied/manifest.json",
+      "sha256": "e3c5016a5348ed8375f562a0cc4f3732fd650b8e490986c94399a1fa13e2f3d9"
+    },
+    {
+      "path": "output/pdf/varied/expected-results.json",
+      "sha256": "22579aaa07e247351b42a8c93f60878fb926bddae921c9d1a45f3b30ac79b4ad"
+    }
+  ],
+  "expected_label_scope": "authored_development_examples_not_independent_holdout",
+  "aggregate": {
+    "cases": 3,
+    "cases_matching_authored_expected_statuses": 3,
+    "proposed_fields": 64,
+    "accepted_fields": 63,
+    "held_fields": 1,
+    "decision_rows": 30,
+    "verdict_counts": {
+      "MATCH": 26,
+      "MISMATCH": 3,
+      "MISSING": 0,
+      "NEEDS_REVIEW": 1
+    },
+    "source_link_entries": 60,
+    "invalid_source_entries": 0,
+    "evidence_complete_rows": 29,
+    "calls_attempted": 6,
+    "calls_succeeded": 6,
+    "additional_explanation_calls": 0,
+    "llm_used_for_verdict": false,
+    "all_record_chain_and_provenance_checks_passed": true
+  },
+  "cases": [
+    {
+      "case_id": "V01",
+      "extraction_finished_at_utc": "2026-10-21T03:38:44.489814+00:00",
+      "review_created_at_utc": "2026-10-21T03:38:45.592731+00:00",
+      "sources": [
+        {
+          "document_id": "SPEC-V01",
+          "role": "customer_spec",
+          "sha256": "f71531e020a30d16b1190c31ad3ca890a00ac5a8183bbe12e3065d46f9a163f3",
+          "page_count": 2,
+          "path": "output/pdf/varied/V01/01_customer_spec.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "AMD-V01",
+          "role": "amendment",
+          "sha256": "0ef4bf73e1b3dbf24fae4583184dc4a85cfc65f5fcd20da1e7c275586e553c64",
+          "page_count": 1,
+          "path": "output/pdf/varied/V01/02_amendment.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "HANDOFF-V01",
+          "role": "handoff",
+          "sha256": "786922776a6c969f8f118c59b3e7ef0b9d33a692f3f05e7b31ac06aef1840dfb",
+          "page_count": 2,
+          "path": "output/pdf/varied/V01/03_handoff.pdf",
+          "hash_matches_published_pdf": true
+        }
+      ],
+      "execution": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "execution_mode": "live_request",
+        "external_processing": true,
+        "calls_attempted": 2,
+        "calls_succeeded": 2
+      },
+      "extraction": {
+        "method": "openai_tool_rag",
+        "status": "completed",
+        "proposed_fields": 21,
+        "accepted_fields": 21,
+        "llm_calls": 2,
+        "warnings": []
+      },
+      "review_policy": {
+        "base_id": "SPEC-V01",
+        "handoff_id": "HANDOFF-V01",
+        "approved_amendment_ids": [
+          "AMD-V01"
+        ]
+      },
+      "policy_confirmed": true,
+      "customer_identity": {
+        "status": "MATCH",
+        "can_compare": true
+      },
+      "verdict": {
+        "summary": {
+          "MATCH": 9,
+          "MISMATCH": 1,
+          "MISSING": 0,
+          "NEEDS_REVIEW": 0
+        },
+        "field_statuses": {
+          "rated_power": "MATCH",
+          "hv_voltage": "MATCH",
+          "lv_voltage": "MATCH",
+          "frequency": "MATCH",
+          "phases": "MATCH",
+          "vector_group": "MATCH",
+          "cooling_type": "MATCH",
+          "fan_supply_voltage": "MISMATCH",
+          "tap_changer_type": "MATCH",
+          "installation_type": "MATCH"
+        },
+        "llm_used_for_verdict": false
+      },
+      "evidence": {
+        "result_rows": 10,
+        "complete_rows": 10,
+        "review_required_fields": [],
+        "linked_source_count": 20,
+        "invalid_source_count": 0,
+        "all_linked_quotes_marked_verified": true
+      },
+      "notable_results": [
+        {
+          "field": "fan_supply_voltage",
+          "status": "MISMATCH",
+          "expected": {
+            "value": "440",
+            "unit": "V",
+            "source": {
+              "document_id": "AMD-V01",
+              "title": "가상 승인변경 합의서",
+              "page": 1,
+              "quote": "냉각팬전원: 440 V"
+            }
+          },
+          "actual": {
+            "value": "380",
+            "unit": "V",
+            "source": {
+              "document_id": "HANDOFF-V01",
+              "title": "가상 내부 기술인계표",
+              "page": 2,
+              "quote": "냉각팬전원: 380 V"
+            }
+          },
+          "retained_sources": [
+            {
+              "document_id": "AMD-V01",
+              "page": 1,
+              "quote": "냉각팬전원: 440 V",
+              "verified_in_page": true
+            },
+            {
+              "document_id": "HANDOFF-V01",
+              "page": 2,
+              "quote": "냉각팬전원: 380 V",
+              "verified_in_page": true
+            }
+          ],
+          "evidence_complete": true
+        }
+      ],
+      "explanation_execution": {
+        "execution_mode": "not_requested",
+        "calls_attempted": 0,
+        "calls_succeeded": 0
+      },
+      "checks": {
+        "record_chain_matches": true,
+        "execution_metadata_consistent": true,
+        "source_links_target_derived_snapshot": true,
+        "source_entries_count": 20,
+        "all_source_pages_positive_integers": true,
+        "authored_expected_statuses_match": true,
+        "source_hashes_match_published_pdfs": true,
+        "policy_matches_authored_case": true,
+        "expected_live_execution_recorded": true,
+        "no_llm_verdict_or_additional_explanation_call": true
+      },
+      "authored_case_note": "고객 팬 전원 380 V는 승인 서신의 440 V로 대체됐지만 인계 메모는 380 V입니다."
+    },
+    {
+      "case_id": "V02",
+      "extraction_finished_at_utc": "2026-10-21T04:48:40.814689+00:00",
+      "review_created_at_utc": "2026-10-21T04:48:41.682217+00:00",
+      "sources": [
+        {
+          "document_id": "SPEC-V02",
+          "role": "customer_spec",
+          "sha256": "2b6e8743ef36bb8bc3933f102085a2b7a7953bed258a4639042c3d3b528ef452",
+          "page_count": 2,
+          "path": "output/pdf/varied/V02/01_customer_spec.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "AMD-V02",
+          "role": "amendment",
+          "sha256": "0b7b8191e41f70639cb4a4c53b54537bde3206177a8daf8471ae2323372bd4ce",
+          "page_count": 1,
+          "path": "output/pdf/varied/V02/02_amendment.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "HANDOFF-V02",
+          "role": "handoff",
+          "sha256": "7aecd1449ea90643ce55ec88809331ff82c6d96449df4906a09ef8fffd25dbea",
+          "page_count": 2,
+          "path": "output/pdf/varied/V02/03_handoff.pdf",
+          "hash_matches_published_pdf": true
+        }
+      ],
+      "execution": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "execution_mode": "live_request",
+        "external_processing": true,
+        "calls_attempted": 2,
+        "calls_succeeded": 2
+      },
+      "extraction": {
+        "method": "openai_tool_rag",
+        "status": "partial",
+        "proposed_fields": 21,
+        "accepted_fields": 20,
+        "llm_calls": 2,
+        "warnings": [
+          {
+            "code": "REJECTED_EXTRACTION",
+            "message": "AI 제안이 지원하는 단일 값·단위가 아닙니다.",
+            "document_id": "HANDOFF-V02",
+            "field": "frequency"
+          },
+          {
+            "code": "EXTRACTION_INCOMPLETE",
+            "message": "1개 항목은 값 추출을 확정하지 못했습니다. 코드가 대신 값을 만들거나 누락으로 판정하지 않습니다."
+          }
+        ]
+      },
+      "review_policy": {
+        "base_id": "SPEC-V02",
+        "handoff_id": "HANDOFF-V02",
+        "approved_amendment_ids": [
+          "AMD-V02"
+        ]
+      },
+      "policy_confirmed": true,
+      "customer_identity": {
+        "status": "MATCH",
+        "can_compare": true
+      },
+      "verdict": {
+        "summary": {
+          "MATCH": 9,
+          "MISMATCH": 0,
+          "MISSING": 0,
+          "NEEDS_REVIEW": 1
+        },
+        "field_statuses": {
+          "rated_power": "MATCH",
+          "hv_voltage": "MATCH",
+          "lv_voltage": "MATCH",
+          "frequency": "NEEDS_REVIEW",
+          "phases": "MATCH",
+          "vector_group": "MATCH",
+          "cooling_type": "MATCH",
+          "fan_supply_voltage": "MATCH",
+          "tap_changer_type": "MATCH",
+          "installation_type": "MATCH"
+        },
+        "llm_used_for_verdict": false
+      },
+      "evidence": {
+        "result_rows": 10,
+        "complete_rows": 9,
+        "review_required_fields": [
+          "frequency"
+        ],
+        "linked_source_count": 20,
+        "invalid_source_count": 0,
+        "all_linked_quotes_marked_verified": true
+      },
+      "notable_results": [
+        {
+          "field": "frequency",
+          "status": "NEEDS_REVIEW",
+          "expected": {
+            "value": "60",
+            "unit": "Hz",
+            "source": {
+              "document_id": "SPEC-V02",
+              "title": "가상 고객 기술사양서",
+              "page": 1,
+              "quote": "전원주파수: 60 Hz"
+            }
+          },
+          "actual": null,
+          "retained_sources": [
+            {
+              "document_id": "SPEC-V02",
+              "page": 1,
+              "quote": "전원주파수: 60 Hz",
+              "verified_in_page": true
+            },
+            {
+              "document_id": "HANDOFF-V02",
+              "page": 2,
+              "quote": "전원주파수: 미기재",
+              "verified_in_page": true
+            }
+          ],
+          "evidence_complete": false
+        }
+      ],
+      "explanation_execution": {
+        "execution_mode": "not_requested",
+        "calls_attempted": 0,
+        "calls_succeeded": 0
+      },
+      "checks": {
+        "record_chain_matches": true,
+        "execution_metadata_consistent": true,
+        "source_links_target_derived_snapshot": true,
+        "source_entries_count": 20,
+        "all_source_pages_positive_integers": true,
+        "authored_expected_statuses_match": true,
+        "source_hashes_match_published_pdfs": true,
+        "policy_matches_authored_case": true,
+        "expected_live_execution_recorded": true,
+        "no_llm_verdict_or_additional_explanation_call": true
+      },
+      "authored_case_note": "팬 변경 반영, 단위 동등성, DETC/무전압 탭절환기 및 옥내형/INDOOR 동등성을 확인합니다. 인계 메모의 명시 미기재 항목은 AI 추출 게이트에서 보류합니다."
+    },
+    {
+      "case_id": "V03",
+      "extraction_finished_at_utc": "2026-10-21T04:49:50.845858+00:00",
+      "review_created_at_utc": "2026-10-21T04:49:52.276197+00:00",
+      "sources": [
+        {
+          "document_id": "SPEC-V03",
+          "role": "customer_spec",
+          "sha256": "ff11c85a2df2d36204c2cbb6b21e3eeda249db7f275a7edfb06adb58d4e656f2",
+          "page_count": 2,
+          "path": "output/pdf/varied/V03/01_customer_spec.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "AMD-V03",
+          "role": "amendment",
+          "sha256": "55a07b4c480de07c4896ed98fbdffc78f71fbcc3161bef98f6810bcc44ed6ce5",
+          "page_count": 1,
+          "path": "output/pdf/varied/V03/02_amendment.pdf",
+          "hash_matches_published_pdf": true
+        },
+        {
+          "document_id": "HANDOFF-V03",
+          "role": "handoff",
+          "sha256": "f0561f669080a99e55d494b4d66ea3e1b5bdc88bb0c86bcd32515bbc8648d424",
+          "page_count": 2,
+          "path": "output/pdf/varied/V03/03_handoff.pdf",
+          "hash_matches_published_pdf": true
+        }
+      ],
+      "execution": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "execution_mode": "live_request",
+        "external_processing": true,
+        "calls_attempted": 2,
+        "calls_succeeded": 2
+      },
+      "extraction": {
+        "method": "openai_tool_rag",
+        "status": "completed",
+        "proposed_fields": 22,
+        "accepted_fields": 22,
+        "llm_calls": 2,
+        "warnings": []
+      },
+      "review_policy": {
+        "base_id": "SPEC-V03",
+        "handoff_id": "HANDOFF-V03",
+        "approved_amendment_ids": [
+          "AMD-V03"
+        ]
+      },
+      "policy_confirmed": true,
+      "customer_identity": {
+        "status": "MATCH",
+        "can_compare": true
+      },
+      "verdict": {
+        "summary": {
+          "MATCH": 8,
+          "MISMATCH": 2,
+          "MISSING": 0,
+          "NEEDS_REVIEW": 0
+        },
+        "field_statuses": {
+          "rated_power": "MATCH",
+          "hv_voltage": "MATCH",
+          "lv_voltage": "MATCH",
+          "frequency": "MATCH",
+          "phases": "MATCH",
+          "vector_group": "MATCH",
+          "cooling_type": "MATCH",
+          "fan_supply_voltage": "MATCH",
+          "tap_changer_type": "MISMATCH",
+          "installation_type": "MISMATCH"
+        },
+        "llm_used_for_verdict": false
+      },
+      "evidence": {
+        "result_rows": 10,
+        "complete_rows": 10,
+        "review_required_fields": [],
+        "linked_source_count": 20,
+        "invalid_source_count": 0,
+        "all_linked_quotes_marked_verified": true
+      },
+      "notable_results": [
+        {
+          "field": "tap_changer_type",
+          "status": "MISMATCH",
+          "expected": {
+            "value": "OLTC",
+            "unit": "",
+            "source": {
+              "document_id": "AMD-V03",
+              "title": "가상 승인변경 합의서",
+              "page": 1,
+              "quote": "탭절환기 방식: OLTC"
+            }
+          },
+          "actual": {
+            "value": "DETC",
+            "unit": "",
+            "source": {
+              "document_id": "HANDOFF-V03",
+              "title": "가상 내부 기술인계표",
+              "page": 1,
+              "quote": "탭절환기 방식: DETC"
+            }
+          },
+          "retained_sources": [
+            {
+              "document_id": "AMD-V03",
+              "page": 1,
+              "quote": "탭절환기 방식: OLTC",
+              "verified_in_page": true
+            },
+            {
+              "document_id": "HANDOFF-V03",
+              "page": 1,
+              "quote": "탭절환기 방식: DETC",
+              "verified_in_page": true
+            }
+          ],
+          "evidence_complete": true
+        },
+        {
+          "field": "installation_type",
+          "status": "MISMATCH",
+          "expected": {
+            "value": "옥외형",
+            "unit": "",
+            "source": {
+              "document_id": "AMD-V03",
+              "title": "가상 승인변경 합의서",
+              "page": 1,
+              "quote": "설치 구분: 옥외형"
+            }
+          },
+          "actual": {
+            "value": "옥내형",
+            "unit": "",
+            "source": {
+              "document_id": "HANDOFF-V03",
+              "title": "가상 내부 기술인계표",
+              "page": 2,
+              "quote": "설치 구분: 옥내형"
+            }
+          },
+          "retained_sources": [
+            {
+              "document_id": "AMD-V03",
+              "page": 1,
+              "quote": "설치 구분: 옥외형",
+              "verified_in_page": true
+            },
+            {
+              "document_id": "HANDOFF-V03",
+              "page": 2,
+              "quote": "설치 구분: 옥내형",
+              "verified_in_page": true
+            }
+          ],
+          "evidence_complete": true
+        }
+      ],
+      "explanation_execution": {
+        "execution_mode": "not_requested",
+        "calls_attempted": 0,
+        "calls_succeeded": 0
+      },
+      "checks": {
+        "record_chain_matches": true,
+        "execution_metadata_consistent": true,
+        "source_links_target_derived_snapshot": true,
+        "source_entries_count": 20,
+        "all_source_pages_positive_integers": true,
+        "authored_expected_statuses_match": true,
+        "source_hashes_match_published_pdfs": true,
+        "policy_matches_authored_case": true,
+        "expected_live_execution_recorded": true,
+        "no_llm_verdict_or_additional_explanation_call": true
+      },
+      "authored_case_note": "승인 서신은 탭절환기 방식을 OLTC, 설치 구분을 옥외형으로 변경했지만 인계 메모에는 DETC와 옥내형이 남아 있습니다. 실제 공학설계 적합성을 판정하는 사례가 아닙니다."
+    }
+  ],
+  "limitations": [
+    "V01~V03은 작성자가 구성한 개발용 가상 사례이며 실제 고객사 문서, 독립 평가 데이터 또는 일반 PDF 처리 정확도를 대표하지 않습니다.",
+    "V02의 주파수는 '전원주파수: 미기재' 때문에 수용하지 않고 NEEDS_REVIEW로 보류했습니다. 원문 두 곳이 연결되어도 이 행의 evidence_complete는 false이며, 모든 항목이 확정되었다고 해석하면 안 됩니다.",
+    "63/64는 제안된 값 중 원문 검증을 통과해 수용한 개수입니다. 모델 정확도, 재현율 또는 성능 개선율이 아닙니다.",
+    "각 사례의 2회 호출 성공은 애플리케이션이 완결된 JSON 응답을 받은 기록입니다. 필드 정확도·OpenAI 과금 내역을 독립적으로 증명하지 않습니다.",
+    "AI는 검색 계획과 값 추출을 제안했고 키워드 검색, 근거 검증, 승인 변경 반영 및 최종 비교 판정은 코드가 수행했습니다. 벡터 검색·MCP·멀티 에이전트 실행을 검증한 자료가 아닙니다.",
+    "원문 연결 검사는 인용문과 문서·페이지 연결을 확인하는 범위입니다. 의미의 완전성, 실제 승인 권한, 법인 동일성 또는 변압기 공학설계 적합성을 보장하지 않습니다.",
+    "공개 소스 파일의 해시는 입력 동일성을 확인할 수 있도록 제공합니다. 생성형 모델의 재실행 결과가 바이트 단위로 동일하다는 보장은 없으며 모델 재실행에는 별도 외부 전송·비용 동의가 필요합니다.",
+    "개인 실행 기록과 런타임 식별자는 공개하지 않았습니다. 이 파일은 저장 기록을 바탕으로 작성한 공개 요약이지 공급자가 서명한 감사 증명서가 아닙니다.",
+    "화면 폴링을 포함한 관측 소요 시간은 벤치마크가 아니므로 이 파일의 성능 지표로 포함하지 않았습니다."
+  ]
+}

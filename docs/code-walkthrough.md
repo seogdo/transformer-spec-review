@@ -1,20 +1,20 @@
 # 핵심 코드 설명
 
-텍스트 AI 모드의 처리 경로를 설명합니다. 정형 D01·D02 예시는 AI 없이 코드를 실행하는 별도 경로입니다. 아래 발췌는 실제 소스의 일부이며, 각 함수 전체를 대신하지 않습니다.
+최종 제출에서 사용한 **OpenAI API · `gpt-4o-mini`**의 텍스트 AI 처리 경로를 설명합니다. 정형 D01·D02 예시는 AI 없이 코드를 실행하는 별도 경로이며, Ollama는 선택 가능한 로컬 경로입니다. 아래 발췌는 실제 소스의 일부이며, 각 함수 전체를 대신하지 않습니다.
 
 ## AI 제공업체 선택 경계
 
 [실행 도구](../scripts/run_web.py)는 `.env`의 허용된 값만 읽고 `--backend openai` 또는 `--backend ollama`를 선택한 뒤 앱을 불러옵니다. 앱이 생성될 때 제공업체·모델 설정을 고정하여 이후 요청에서 환경변수를 바꿔 다른 실행에 영향을 주지 않습니다. 같은 HTML이 서버의 설정을 표시하며, 브라우저에 API 키를 전달하지 않습니다.
 
-[연결 모듈](../src/handoff_review/llm_backend.py)의 OpenAI 어댑터는 JSON 스키마 요청을 Chat Completions 형식으로 변환하고, 완료·거절·응답 크기를 확인한 뒤 구조화 객체를 반환합니다. Ollama 전용 옵션을 OpenAI에 그대로 보내지 않습니다. 원문과 인용을 대조하는 검증 및 비교 판정은 두 방식이 공유합니다. Structured Outputs는 출력 형식을 제한할 뿐, 사양값의 사실성이나 공학적 적합성을 보증하지 않습니다.
+[연결 모듈의 openai_request](../src/handoff_review/llm_backend.py#L199)는 JSON 스키마 요청을 Chat Completions 형식으로 변환하고, 완료·거절·응답 크기를 확인한 뒤 구조화 객체를 반환합니다. 고정된 `api.openai.com/v1/chat/completions`에 `json_schema`, `strict:true`, `store:false`를 보내며 Ollama 전용 옵션을 그대로 보내지 않습니다. 원문과 인용을 대조하는 검증 및 비교 판정은 두 방식이 공유합니다. Structured Outputs는 출력 형식을 제한할 뿐, 내용 오류까지 제거하지 않습니다. 사양값의 사실성이나 공학적 적합성은 별도 검증 대상입니다. [공식 구조화 출력 안내](https://developers.openai.com/api/docs/guides/structured-outputs)
 
 화면·서버 양쪽에서 OpenAI 외부 처리·과금 동의를 확인합니다. AI 실패 시 자동 재시도나 다른 제공업체로의 전환 없이 보류하며, 실행 당시의 제공업체·모델과 고정 응답 주입 여부를 저장합니다. 저장 기록 조회에는 현재 서버의 모델 이름을 덮어쓰지 않습니다. [실행·검증 구분](ai-backends.md)을 참고하세요.
 
-아래 행 번호는 이전 발표자료 작성 당시 기준이므로, 새 발표자료에서는 파일 안의 함수 이름과 실제 최신 위치를 다시 확인해야 합니다. 기존 모델 측정값은 OpenAI 결과가 아닙니다.
+아래 행 번호는 2026년 10월 21일 OpenAI 연결 반영 소스를 확인한 위치입니다. 이후 코드가 바뀌면 함수 이름으로 다시 찾습니다. 과거 Ollama F01~F06과 F04 고정 응답 재생 측정은 OpenAI 실행 결과가 아닙니다.
 
 ## Agent 실행 구조와 호출 제어
 
-발표의 Agent Graph 설명은 [extract_upload](../src/handoff_review/extraction_agent.py#L573)에 직접 구현한 **Python 제어 흐름**입니다. LangGraph의 `StateGraph`, Multi-Agent 또는 MCP 실행 그래프는 아닙니다.
+발표의 Agent Graph 설명은 [extract_upload](../src/handoff_review/extraction_agent.py#L574)에 직접 구현한 **Python 제어 흐름**입니다. LangGraph의 `StateGraph`, Multi-Agent 또는 MCP 실행 그래프는 아닙니다.
 
 | 순서 | 실행 주체와 동작 | 보류·중단 조건 |
 | --- | --- | --- |
@@ -25,11 +25,11 @@
 | 5 | 담당자가 적용할 변경을 확인하고 코드가 사양을 비교합니다. | 출처·조건이 불확실하면 `NEEDS_REVIEW`로 남깁니다. |
 | 6 | 검토 결과와 근거를 보관하고 보고서를 엽니다. | 설계 승인이나 실제 제작 지시를 실행하지 않습니다. |
 
-[599~607행의 호출 함수](../src/handoff_review/extraction_agent.py#L599)는 추출 작업 한 번의 모델 요청을 **최대 2회**, 전체 시간 예산을 **90초**로 제한합니다. 항상 두 번 호출되는 것은 아닙니다. 별도 버튼인 ‘AI 구조 확인’은 추가 요청 경로이므로 서비스 전체 호출 수와 구분합니다. 검색 함수는 프로젝트 내부 함수 호출이며 MCP 서버에 요청하지 않습니다. 실행 추적 목록도 직접 기록한 로컬 정보이며 LangSmith가 아닙니다.
+[607~618행의 호출 함수](../src/handoff_review/extraction_agent.py#L607)는 추출 작업 한 번의 모델 요청을 **최대 2회**, 전체 시간 예산을 **90초**로 제한합니다. 항상 두 번 호출되는 것은 아닙니다. `calls_succeeded`는 완료된 구조화 응답을 받은 횟수이고, `accepted_fields`는 이후 원문 검증을 통과한 제안 수이므로 서로 다른 지표입니다. 별도 버튼인 ‘AI 구조 확인’은 추가 요청 경로이므로 서비스 전체 호출 수와 구분합니다. 검색 함수는 프로젝트 내부 함수 호출이며 MCP 서버에 요청하지 않습니다. 실행 추적 목록도 직접 기록한 로컬 정보이며 LangSmith가 아닙니다.
 
 ## 근거 검색
 
-위치: [extraction_agent.py의 검색 함수](../src/handoff_review/extraction_agent.py#L300)
+위치: [extraction_agent.py의 검색 함수](../src/handoff_review/extraction_agent.py#L301), 발췌는 315~326행입니다.
 
 AI가 지정된 문서·항목·별칭에서 검색 계획을 제안합니다. 코드는 항목별 원문 구간을 찾아 검색어 포함 점수로 정렬하고, 문자 예산 안에서 최대 2개를 반환합니다.
 
@@ -55,7 +55,7 @@ AI가 지정된 문서·항목·별칭에서 검색 계획을 제안합니다. �
 
 ## 값과 원문 검증
 
-위치: [extraction_agent.py의 제안 검증 함수](../src/handoff_review/extraction_agent.py#L497), 아래는 수치 검증 분기의 544~551행입니다.
+위치: [extraction_agent.py의 제안 검증 함수](../src/handoff_review/extraction_agent.py#L498), 아래는 수치 검증 분기의 545~552행입니다.
 
 ```python
         matching = [token for token in tokens if token == (proposal["value"], proposal["unit"])]
@@ -97,9 +97,9 @@ AI가 지정된 문서·항목·별칭에서 검색 계획을 제안합니다. �
 
 ## 의존성 주입과 자동검사
 
-[extract_upload](../src/handoff_review/extraction_agent.py#L573)는 `request_fn`을 받습니다. 기본 실행은 로컬 모델 요청 함수를 사용하며, 시험은 고정 JSON을 반환하는 함수를 주입합니다. 이를 통해 AI 서버 없이도 호출 횟수·인용 불일치·단위 오류·시간 초과·입력 보존을 재현할 수 있습니다.
+[extract_upload](../src/handoff_review/extraction_agent.py#L574)는 `request_fn`과 서버 시작 시 고정한 `ai_config`를 받습니다. [600~601행](../src/handoff_review/extraction_agent.py#L600)은 주입 함수가 있으면 이를 사용하고, 없으면 설정에 따라 OpenAI 요청 또는 Ollama 요청을 선택합니다. 최종 제출 실행은 OpenAI이며, 시험은 고정 JSON을 반환하는 함수를 주입합니다. 이를 통해 실제 API 과금 없이 호출 횟수·인용 불일치·단위 오류·시간 초과·입력 보존을 재현할 수 있습니다.
 
-[test_extraction_agent.py](../tests/test_extraction_agent.py#L85)는 2회 호출, 검색 결과의 다음 요청 전달, 원문과 메타데이터 보존을 확인합니다. 자동검사 통과는 해당 코드 조건의 검증이며 모델의 현업 정확도는 아닙니다.
+[고정 응답 검사](../tests/test_extraction_agent.py#L127)는 2회 호출, 검색 결과의 다음 요청 전달, 원문과 메타데이터 보존을 확인합니다. [OpenAI 연결 분기 검사](../tests/test_extraction_agent.py#L85)는 통신을 모의 함수로 바꿔 설정 전달과 기존 원문 검증을 검사하고, [주입 실행 출처 검사](../tests/test_extraction_agent.py#L102)는 이를 실모델 호출로 표시하지 않는지 확인합니다. 자동검사 통과는 해당 코드 조건의 검증이며 모델의 현업 정확도는 아닙니다.
 
 ## 발표에서 설명할 핵심
 
