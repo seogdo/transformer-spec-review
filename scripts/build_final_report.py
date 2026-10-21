@@ -15,10 +15,11 @@ from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    Image, PageBreak, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
+    Flowable, Image, PageBreak, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,6 +78,31 @@ def build(args: argparse.Namespace) -> None:
         image.hAlign = "CENTER"
         return image
 
+    def screenshot_region(path: Path, top: float, bottom: float) -> Flowable:
+        """Enlarge a labelled crop in PDF layout; preserve the source pixels."""
+        image = ImageReader(str(path))
+        source_width, source_height = image.getSize()
+        if not 0 <= top < bottom <= 1:
+            raise ValueError("Screenshot crop must stay within the source image.")
+        scale = WIDTH / source_width
+
+        class ScreenshotRegion(Flowable):
+            def __init__(self):
+                super().__init__()
+                self.width = WIDTH
+                self.height = source_height * (bottom - top) * scale
+
+            def draw(self):
+                self.canv.saveState()
+                clip = self.canv.beginPath()
+                clip.rect(0, 0, self.width, self.height)
+                self.canv.clipPath(clip, stroke=0, fill=0)
+                self.canv.drawImage(image, 0, -source_height * (1 - bottom) * scale,
+                                    width=WIDTH, height=source_height * scale)
+                self.canv.restoreState()
+
+        return ScreenshotRegion()
+
     def code_excerpt(relative_path: str, first: int, last: int) -> Table:
         """Print the checked-in source itself, not rewritten pseudocode."""
         lines = (ROOT / relative_path).read_text(encoding="utf-8").splitlines()
@@ -105,9 +131,10 @@ def build(args: argparse.Namespace) -> None:
 
     story = [
         p("AI 서비스 Mini Project  |  선택 과제 2  |  최종 보고서", "small"),
+        p("G077  문성도  |  신규 프로젝트", "small"),
         p("변압기 수주\n기술사양 검토 AI", "title"),
         p("수주 확정 후 기술 인계회의 전에,\n변경된 요구사항과 내부 인계표의 차이를 확인합니다."),
-        p("프로젝트 요약", "h2"),
+        p("주제와 주요 task", "h2"),
         p("고객 사양서, 기술 변경 합의서, 내부 수주 인계표를 함께 검토하는 "
           "로컬 웹 프로토타입입니다. AI가 근거와 값을 제안하고 코드가 문서 간 "
           "차이를 비교합니다. 담당자는 연결된 원문을 확인한 뒤 판단합니다."),
@@ -125,23 +152,23 @@ def build(args: argparse.Namespace) -> None:
           "https://github.com/seogdo/transformer-spec-review", "small"),
         PageBreak(),
         p("01  구현 구조", "small"),
-        p("AI 추출과 규칙 판정을\n분리했습니다", "title"),
+        p("Agent Graph로 설명하는\n실제 Python 제어 흐름", "title"),
         p("PDF 3종을 읽은 뒤 고객사 표기를 먼저 확인합니다. 고객사가 다르거나 "
           "불명확하면 비교를 보류합니다. 같은 고객사로 확인되면 근거 검색과 추출을 진행합니다."),
         grid([
-            ["단계", "처리 주체와 역할"],
+            ["실행 순서", "다음 단계와 보류 분기"],
             ["1  문서 읽기", "코드가 텍스트 PDF와 지정 메타데이터를 읽고 문서·페이지·원문을 보존합니다."],
-            ["2  근거 찾기", "AI가 검색 계획을 만들고, 코드가 키워드와 지정 별칭으로 관련 원문을 검색합니다."],
-            ["3  값 제안", "AI가 검색된 원문에서 사양값·단위·출처를 제안합니다. 정상 추출 경로는 최대 2회 호출입니다."],
-            ["4  근거 검증", "코드가 인용문·값·단위·조건·중복을 검사합니다. 모호한 후보는 확정값으로 채우지 않습니다."],
-            ["5  변경 적용", "담당자가 기준 문서와 적용할 변경을 확인합니다. 코드가 단위와 변경 적용 순서를 처리합니다."],
-            ["6  비교와 확인", "코드가 10개 항목을 비교합니다. 담당자가 양쪽 원문을 확인하고 기록을 보관합니다."],
+            ["2  고객사 확인", "일치하면 추출로 이동합니다. 누락·상충·혼입이면 AI 실행과 기술 비교를 보류합니다."],
+            ["3  계획 → 검색", "AI 1회차가 검색 계획을 제안하고 코드가 키워드 검색을 실행합니다. 근거가 없으면 2회차를 생략합니다."],
+            ["4  제안 → 검증", "AI 2회차가 값·단위·인용을 제안합니다. 코드 검증 실패·모호함은 확인 필요로 남깁니다."],
+            ["5  변경 적용", "담당자가 적용할 변경을 확인합니다. 코드는 승인 표기·프로젝트·명시적 대체 관계를 검사합니다."],
+            ["6  비교 → 저장", "코드가 단위를 정규화해 10항목을 비교합니다. 담당자가 원문과 결과를 확인하고 기록을 보관합니다."],
         ], [88, WIDTH - 88]),
-        p("기술 구성", "h2"),
-        p("Python·FastAPI / HTML·CSS·JavaScript / Ollama·qwen3.5:2b / 로컬 JSON 저장소입니다. "
-          "별도 외부 AI API나 API 키를 사용하지 않습니다."),
-        p("검색은 키워드·지정 별칭 기반입니다. 임베딩 벡터 검색, MCP, 네이티브 도구 호출은 "
-          "구현 범위에 포함하지 않았습니다. 정형 예시는 AI 없이 코드만으로 읽는 별도 경로입니다.", "small"),
+        p("설명용 흐름과 구현 기술의 구분", "h2"),
+        p("단일 워크플로의 순차 실행·분기를 직접 구현했습니다. LangGraph 실행 엔진이나 "
+          "Multi-Agent 구조가 아닙니다. 정형 모드는 AI 없이 코드 파서에서 비교로 이어지는 별도 경로입니다."),
+        p("extract_upload:573 / 검색계획:613 / 검색 실행:621 / 값 제안:632 / 검증:672행입니다. "
+          "추출 한 번의 AI 요청은 최대 2회·전체 90초입니다. 별도 선택 기능인 AI 구조 확인은 추가 호출입니다.", "small"),
         PageBreak(),
         p("02  대표 시연", "small"),
         p("440 V 요구와 380 V 인계를\n원문으로 확인합니다", "title"),
@@ -173,21 +200,22 @@ def build(args: argparse.Namespace) -> None:
         p("이번 자동·화면 모의 재검증은 실제 모델을 추가 호출하지 않았습니다. "
           "모든 시연 문서는 직접 구성한 가상 개발 자료입니다. 자동 검사 개수는 모델 정확도가 "
           "아니며, 이 결과를 실제 회사 문서의 정확도나 시간 절감률로 해석하지 않습니다."),
-        p("현재 제한과 후속 과제", "h2"),
+        p("현재 제한과 배운 점", "h2"),
         p("지정 메타데이터와 가상 자료 선언이 있는 텍스트 PDF 3종을 지원합니다. "
           "파일당 5 MiB·20쪽 제한이 있으며 스캔·OCR·도면·다제품 문서는 지원하지 않습니다. "
           "고객사 별칭과 승인 상태는 데모 입력을 확인하는 수준입니다."),
-        p("현업 적용에는 실제 문서 형식에 대한 독립 평가, 접근 권한과 승인 이력 연결, "
-          "문서 진위 및 운영 보안 검토가 필요합니다. 공개 저장소는 로컬 앱의 소스 공유이며 "
-          "인터넷 서비스 배포를 의미하지 않습니다."),
+        p("이번 구현에서 얻은 교훈은 값을 많이 채우는 것보다, 근거와 불확실성을 함께 보여주는 "
+          "설계가 중요하다는 점입니다. 테스트 통과와 실제 모델 품질, 원문 연결과 설계 승인도 "
+          "서로 구분해야 했습니다. 후속 개선은 실제 문서의 독립 평가, 승인 이력·접근 권한 연결, "
+          "검색 방식과 호출 수의 동일 입력 비교입니다."),
         PageBreak(),
-        p("04  회의용 보고서와 실행 안내", "small"),
+        p("04  최종 산출 화면과 실행 안내", "small"),
         p("검토 결과를\n회의 자료로 연결했습니다", "title"),
         p("결과와 원문을 사람이 확인한 뒤 회의용 보고서를 열 수 있습니다. 저장된 판정·값·근거를 "
           "그대로 표시하며 AI를 다시 호출하거나 기존 기록을 변경하지 않습니다."),
         screenshot(ROOT / "output/meeting-report-preview.png", 265),
         Spacer(1, 8),
-        p("가상 검토 기록의 보고서 화면입니다. 인쇄 버튼으로 브라우저 인쇄 창을 열며, "
+        p("최종 기능 캡처: V03 저장 결과가 연결된 회의용 보고서입니다. 인쇄 버튼으로 브라우저 인쇄 창을 열며, "
           "PDF 저장은 해당 브라우저에서 지원할 때 사용할 수 있습니다.", "small"),
         p("시연 순서", "h2"),
         p("앱 실행 → V01 선택 → AI 추출 → 변경 기준 확인 → 10개 항목 비교 → "
@@ -199,7 +227,32 @@ def build(args: argparse.Namespace) -> None:
         p("제출 시트의 E열에는 공개 저장소, F열에는 최종 보고서 공개 주소를 입력해야 합니다. "
           "파일 작성·공개와 시트 제출 완료는 별도이며, 보고서 작성 시점에는 시트 입력을 수행하지 않았습니다.", "small"),
         PageBreak(),
-        p("05  실제 코드 설명  |  검색과 검증", "small"),
+        p("05  기술 적용과 의존성 주입", "small"),
+        p("사용한 기술과\n사용하지 않은 기술을 구분합니다", "title"),
+        grid([
+            ["구분", "실제 적용 내용"],
+            ["RAG · 로컬 AI", "Ollama·qwen3.5:2b의 계획·값 제안 + 키워드·별칭 근거 검색입니다. 벡터 검색은 아닙니다."],
+            ["DI · 모듈화", "request_fn 함수 주입을 사용합니다. PDF 읽기·추출·고객사 확인·단위 처리·비교·웹·보고서를 분리했습니다."],
+            ["검사 · 기록", f"Python {args.python_tests}개, 화면 모의 {12 + 39 + args.report_ui_tests}개 통과 기록입니다. 단계별 trace는 직접 작성한 로컬 기록입니다."],
+            ["웹 · 저장", "Python·FastAPI, HTML·CSS·JavaScript, 로컬 JSON입니다. 공개 저장소는 소스 공유이며 운영 서비스 배포가 아닙니다."],
+            ["미구현", "Multi-Agent, MCP, LangGraph, LangSmith, 임베딩·벡터 DB, 네이티브 도구 호출은 사용하지 않았습니다."],
+        ], [90, WIDTH - 90]),
+        p("DI: 실제 요청과 시험 응답을 분리했습니다", "h2"),
+        p("extract_upload(documents, request_fn=None)의 593-594행입니다. 주입 함수가 없으면 "
+          "실제 로컬 요청을 사용합니다. 아래 시험은 계획·값 제안을 고정 응답으로 주입합니다.", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 593, 594),
+        Spacer(1, 8),
+        p("tests/test_extraction_agent.py 69-71행", "small"),
+        code_excerpt("tests/test_extraction_agent.py", 69, 71),
+        Spacer(1, 8),
+        p("같은 파일 85-103행에서 2회 호출, 검색 결과의 다음 요청 전달, 원문·메타데이터 보존을 "
+          "검사합니다. 가짜 응답 검사는 모델 정확도 평가가 아닙니다. 공지에 열거된 기술을 모두 "
+          "사용했다고 표시하지 않고 적용 여부를 공개합니다.", "small"),
+        p("5분 발표 구성", "h2"),
+        p("앞 2분은 주제·대표 결과, 뒤 3분은 실행 흐름·RAG 검색·근거 검증·비교·DI 코드를 "
+          "설명합니다. 다음 두 쪽의 실제 코드를 본 발표의 코드 설명에 사용합니다.", "small"),
+        PageBreak(),
+        p("06  실제 코드 설명  |  검색과 검증", "small"),
         p("검색 결과를 찾은 뒤\n원문과 다시 대조했습니다", "title"),
         p("입력은 문서별 페이지 텍스트와 AI가 제안한 문서 ID·항목·검색어입니다. "
           "아래는 현재 저장소에서 직접 읽은 실제 코드이며 전체 함수 중 핵심 부분입니다. "
@@ -221,7 +274,7 @@ def build(args: argparse.Namespace) -> None:
           "처리·보류: 원문 값·단위, 인용문 안의 값·단위, 항목명과의 직접 연결 중 하나라도 "
           "확인되지 않으면 거부 이유를 반환합니다. 통과해도 조건·복수값·출처 등 후속 검사가 남습니다.", "small"),
         PageBreak(),
-        p("06  실제 코드 설명  |  비교와 기술 선택", "small"),
+        p("07  실제 코드 설명  |  비교와 기술 선택", "small"),
         p("AI의 값 제안과\n최종 판정을 분리했습니다", "title"),
         p("입력은 검증된 기준값·인계값과 각각의 출처입니다. 승인 변경 적용 순서와 고객사 확인은 "
           "이 비교 전에 검사하며, 여기서는 단위·조건을 맞춘 뒤 동일성을 비교합니다."),
@@ -239,11 +292,12 @@ def build(args: argparse.Namespace) -> None:
             ["코드 기반 판정", "단위·조건·변경 관계를 명시 규칙으로 비교했습니다.", "지원하지 않는 단위·조건·모호한 값은 보류합니다."],
             ["로컬 웹·JSON 저장", "설치 범위를 줄이고 검토 기록을 보존·복원했습니다.", "다중 사용자 인증·운영 DB·공개 서비스 보안은 별도 과제입니다."],
         ], [85, 190, WIDTH - 275]),
+        Spacer(1, 8),
         p("선택 과제 2의 도메인·문서 처리·근거 검증·판정·화면을 구현했습니다. "
           "강의의 개념을 적용했지만 MCP·벡터 RAG·범용 PDF 이해를 구현했다고 주장하지 않습니다. "
           "2회 호출은 처리 지연을 늘릴 수 있으며, 첫 검색 계획 호출의 추가 효용은 별도 비교로 입증하지 않았습니다.", "small"),
     ]
-    expected_pages = 7
+    expected_pages = 8
     if args.before_after:
         measured = json.loads(args.before_after.read_text(encoding="utf-8"))
         if (measured.get("passed") is not True
@@ -261,7 +315,7 @@ def build(args: argparse.Namespace) -> None:
         report_path = args.before_after.resolve().relative_to(ROOT).as_posix()
         story.extend([
             PageBreak(),
-            p("07  Before / After  |  저장 응답 재생 비교", "small"),
+            p("부록 A  선택 비교  |  저장 응답 재생", "small"),
             p("판정은 유지하고\n충돌 근거를 보완했습니다", "title"),
             p("F04 가상 인계표에는 팬 전원이 400 V와 440 V로 함께 기재돼 있습니다. "
               "이전 결과는 판정을 보류했지만 인계표 근거 하나만 연결했습니다. "
@@ -282,7 +336,8 @@ def build(args: argparse.Namespace) -> None:
             ], [168, (WIDTH - 168) / 2, (WIDTH - 168) / 2]),
             p("달라진 점", "h2"),
             p("보류를 해제하지 않고 누락됐던 충돌 원문을 추가했습니다. 근거가 연결됐다는 사실과 "
-              "판정을 확정할 수 있다는 사실을 분리해, 보류 항목의 evidence_complete는 false로 유지했습니다."),
+              "판정을 확정할 수 있다는 사실을 분리했습니다. 판정은 보류로 유지하고 "
+              "evidence_complete는 true에서 false로 바로잡았습니다."),
             p("측정 방법과 해석의 한계", "h2"),
             p(f"현재 재생에서 기록된 모델 응답은 {replay['captured_response_replay_calls']}회 사용했고 "
               "실제 모델 통신은 0회였습니다. 변경 전 코드를 다시 실행한 동시 실험이 아니라, "
@@ -297,8 +352,24 @@ def build(args: argparse.Namespace) -> None:
             p(report_path, "small"),
             p("입력·저장 응답·비교 기준·원본 보존 여부는 측정 JSON에 기록했습니다. "
               "정답을 모델에 다시 보내거나 원본 보고서를 수정한 결과가 아닙니다.", "small"),
+            PageBreak(),
+            p("부록 B  보완 후 화면  |  전후 UI 쌍 비교 아님", "small"),
+            p("보류된 두 원문을\n함께 보여주는 화면입니다", "title"),
+            p("F04 보완 후에 저장한 실제 UI 캡처입니다. 고객 사양 400 V와 인계표의 400 V·440 V를 "
+              "함께 표시하되 판정은 확인 필요로 유지했습니다. 수정 전 UI 캡처는 보존돼 있지 않습니다.", "small"),
+            p("동일한 보완 후 캡처의 상태 요약과 두 인계표 근거를 확대 발췌했습니다.", "small"),
+            screenshot_region(ROOT / "output/evidence-conflict-fix.png", 0, 0.10),
+            Spacer(1, 9),
+            p("같은 인계표 1쪽의 첫 번째 원문 후보", "small"),
+            screenshot_region(ROOT / "output/evidence-conflict-fix.png", 0.68, 0.815),
+            Spacer(1, 9),
+            p("같은 인계표 1쪽의 두 번째 원문 후보", "small"),
+            screenshot_region(ROOT / "output/evidence-conflict-fix.png", 0.835, 0.98),
+            Spacer(1, 8),
+            p("이 화면은 보완 후 동작 증거입니다. 앞쪽 표는 과거 저장 결과와 현재 코드의 저장 응답 재생 비교이며, "
+              "구버전·신버전을 각각 새로 실행한 성능 비교나 전후 화면 비교가 아닙니다. 선택 보너스 충족을 확정하지 않습니다.", "small"),
         ])
-        expected_pages = 8
+        expected_pages = 10
 
     def decorate(canvas, doc):
         canvas.saveState()
@@ -319,7 +390,7 @@ def build(args: argparse.Namespace) -> None:
     SimpleDocTemplate(
         str(args.output), pagesize=A4, leftMargin=44, rightMargin=44,
         topMargin=55, bottomMargin=52, title="변압기 수주 기술사양 검토 AI 최종 보고서",
-        author="seogdo", subject="AI 서비스 Mini Project",
+        author="G077 문성도", subject="AI 서비스 Mini Project - 선택 과제 2",
     ).build(story, onFirstPage=decorate, onLaterPages=decorate)
     from pypdf import PdfReader
     actual_pages = len(PdfReader(str(args.output)).pages)

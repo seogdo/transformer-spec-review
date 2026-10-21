@@ -39,8 +39,10 @@
 
 ## 제출 자료
 
-제출용 [프로젝트 최종 보고서](../output/pdf/final-report.pdf)는 문제, 구현 구조, 검증 결과, 실제 코드 설명과 제한된 전후 측정을 담았습니다. 이는 V03 검토 기록을 인쇄한 9쪽 회의용 보고서와 별도 문서입니다.
+제출용 [프로젝트 최종 보고서](../output/pdf/final-report.pdf)는 첫 페이지에 **G077 문성도 / 선택 과제 2**를 표시하고, 주제·주요 task, 실제 Python 실행 흐름, 기술 적용 여부, 최종 실행 화면, 실제 코드와 향후 개선을 담았습니다. 제한된 기록 비교와 보완 후 화면은 부록으로 구분했습니다. 이는 V03 검토 기록을 인쇄한 9쪽 회의용 보고서와 별도 문서입니다.
 
-[발표자료 PowerPoint](../output/presentations/transformer-spec-review-presentation.pptx)는 코드 설명 4장을 포함한 총 16장입니다. 슬라이드별 발표자 노트와 가상 사례의 실제 실행 화면을 포함했으며, 텍스트와 비교 표는 편집할 수 있습니다. PowerPoint 앱 자체에서의 실행 시험은 별도 확인 대상입니다.
+[발표자료 PowerPoint](../output/presentations/transformer-spec-review-presentation.pptx)는 **본 발표 9장과 질문용 부록 9장, 총 18장**입니다. 1~4장의 주제·결과는 2분, 5~9장의 Python 실행 흐름·RAG·검증·비교·DI 코드는 3분으로 배분했습니다. 슬라이드별 발표자 노트와 가상 사례의 실제 실행 화면을 포함하며 텍스트와 비교 표는 편집할 수 있습니다. PowerPoint 앱 자체에서의 실행 시험은 별도 확인 대상입니다.
 
-Google Sheet에는 E열에 저장소 URL `https://github.com/seogdo/transformer-spec-review`, F열에 최종 보고서 PDF의 공개 URL을 입력할 예정입니다. 이 문서 갱신 시점에는 시트에 입력하지 않았습니다.
+2026년 10월 21일 새 발표 공지에 맞춘 수정은 보고서·발표자료·대본·기술 설명 문서에 한정했습니다. 앱의 동작을 추가하거나 기존 시험 수치를 새로 생성한 결과로 바꾸지 않았습니다. 실행 흐름은 직접 구현한 Python 제어 흐름이며, MCP·Multi-Agent·LangGraph·LangSmith를 사용했다고 표기하지 않았습니다. F04의 수정 전 UI 캡처와 과거 소스 재실행 결과가 없으므로 선택 항목의 정식 전후 성능 실험이나 보너스 충족을 주장하지 않습니다.
+
+Google Sheet에는 2026년 10월 22일 E열에 저장소 URL `https://github.com/seogdo/transformer-spec-review`, F열에 최종 보고서 PDF의 공개 URL을 직접 입력할 예정입니다. 이 문서 갱신 시점에는 시트에 입력하지 않았습니다.
