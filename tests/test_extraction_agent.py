@@ -253,6 +253,126 @@ class ExtractionAgentTests(unittest.TestCase):
                 result, _ = run_with(documents, self.proposals)
                 self.assertUncertain(field_of(result))
 
+    def test_short_quote_cannot_confirm_unresolved_values_in_any_field(self):
+        # The proposal and its short quote stay valid substrings. The guard
+        # must inspect the complete source block, not trust that short quote.
+        for field, _, _, _ in FIELDS:
+            for suffix in (" (미확정)", " (잠정)", " (미정)", " (TBD)", " (보류)", " (검토 중)"):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    before = deepcopy(documents)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertUncertain(field_of(result, field=field))
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+                    self.assertEqual(result["status"], "partial")
+                    self.assertEqual(documents, before)
+
+    def test_followup_unresolved_value_status_is_checked_for_every_field(self):
+        for field, _, _, _ in FIELDS:
+            for suffix in ("\n미확정", "\n해당 값은 잠정입니다.", "\n확정 전입니다."):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertUncertain(field_of(result, field=field))
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+
+    def test_completed_consultation_does_not_invalidate_confirmed_non_scoped_fields(self):
+        for field, _, value, _ in FIELDS:
+            if field in {"tap_changer_type", "installation_type"}:
+                continue
+            for suffix in (" (협의 완료)", " (최종 협의 완료)", "\n협의 완료"):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertEqual(field_of(result, field=field)["value"], value)
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS)
+
+    def test_consultation_pending_or_mixed_status_stays_uncertain(self):
+        for field, _, _, _ in FIELDS:
+            for suffix in (" (협의)", " (협의 중)", " (협의 필요)", " (협의 예정)",
+                           " (추후 협의)", " (협의 완료 예정)", " (협의 완료 전)",
+                           " (협의 완료) (미확정)", "\n협의 완료\n미확정"):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertUncertain(field_of(result, field=field))
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+
+    def test_scoped_enum_still_rejects_additional_consultation_text(self):
+        # Tap/installation scope validation intentionally requires an exact
+        # scalar block; the general completion exception must not relax it.
+        for field in ("tap_changer_type", "installation_type"):
+            for suffix in (" (협의 완료)", "\n협의 완료"):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertUncertain(field_of(result, field=field))
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+
+    def test_formal_negation_is_checked_in_full_field_and_followup_line(self):
+        for field, _, _, _ in FIELDS:
+            for suffix in (" 아닙니다.", "\n해당 값이 아닙니다."):
+                with self.subTest(field=field, suffix=suffix):
+                    documents = deepcopy(self.documents)
+                    quote = next(row["quote"] for row in self.proposals
+                                 if row["document_id"] == "HANDOFF" and row["field"] == field)
+                    documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(quote, quote + suffix)
+                    result, _ = run_with(documents, self.proposals)
+                    self.assertUncertain(field_of(result, field=field))
+                    self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+
+    def test_unresolved_frequency_cannot_become_match_after_extraction(self):
+        for suffix in (" (미확정)", " (잠정)", " 아닙니다.", "\n미확정"):
+            with self.subTest(suffix=suffix):
+                documents = deepcopy(self.documents)
+                documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(
+                    "정격주파수: 60 Hz", "정격주파수: 60 Hz" + suffix)
+                extracted, _ = run_with(documents, self.proposals)
+                reviewed = review_case({
+                    "documents": [item["document"] for item in extracted["documents"]],
+                    "review_policy": {"base_id": "SPEC", "handoff_id": "HANDOFF", "approved_amendment_ids": ["AMD"]},
+                })
+                row = next(row for row in reviewed["results"] if row["field"] == "frequency")
+                self.assertEqual(row["status"], "NEEDS_REVIEW")
+                self.assertIsNone(row["actual"])
+                self.assertEqual(reviewed["summary"]["MATCH"], 8)
+                self.assertEqual(reviewed["summary"]["MISMATCH"], 1)
+
+    def test_pending_marker_in_another_field_or_page_does_not_erase_valid_values(self):
+        # This must not become a document-wide word blacklist. A known next
+        # field ends adjacency; unrelated administrative pages stay unrelated.
+        documents = deepcopy(self.documents)
+        documents[-1]["pages"][0]["text"] = documents[-1]["pages"][0]["text"].replace(
+            "정격주파수: 60 Hz", "정격주파수: 60 Hz (미확정)")
+        documents[-1]["pages"].append({"page": 2, "text": "담당자 회의는 추후 협의 예정입니다."})
+        result, _ = run_with(documents, self.proposals)
+        self.assertUncertain(field_of(result, field="frequency"))
+        self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS - 1)
+        self.assertEqual(field_of(result, field="lv_voltage")["value"], "400")
+        self.assertEqual(field_of(result, field="phases")["value"], "3")
+
+    def test_pending_marker_beyond_table_row_boundary_does_not_qualify_previous_field(self):
+        documents = deepcopy(self.documents)
+        documents[-1]["pages"][0]["text"] += "\nA-11\n추후 협의 예정입니다."
+        result, _ = run_with(documents, self.proposals)
+        self.assertEqual(result["accepted_fields"], EXAMPLE_FIELDS)
+        self.assertEqual(result["status"], "completed")
+
     def test_example_context_is_not_a_normative_requirement(self):
         for prefix in ("참고 예시: ", "예를 들면 "):
             documents = deepcopy(self.documents)
@@ -314,8 +434,10 @@ class ExtractionAgentTests(unittest.TestCase):
                 self.assertUncertain(field_of(result))
 
     def test_same_excerpt_label_and_unrelated_value_are_not_bound(self):
-        self.documents[-1]["pages"][0]["text"] = self.documents[-1]["pages"][0]["text"].replace("냉각팬 전원전압: 380 V", "냉각팬 전원전압: 미정. 별개 기재 380 V")
-        self.proposals[-1]["quote"] = "냉각팬 전원전압: 미정. 별개 기재 380 V"
+        # Use a non-pending phrase to exercise direct binding itself; pending
+        # terms now correctly fail earlier in the original-context guard.
+        self.documents[-1]["pages"][0]["text"] = self.documents[-1]["pages"][0]["text"].replace("냉각팬 전원전압: 380 V", "냉각팬 전원전압: 기재 없음. 별개 기재 380 V")
+        self.proposals[-1]["quote"] = "냉각팬 전원전압: 기재 없음. 별개 기재 380 V"
         result, _ = run_with(self.documents, self.proposals)
         self.assertUncertain(field_of(result))
         self.assertIn("직접 연결", field_of(result)["extraction_uncertainty"])

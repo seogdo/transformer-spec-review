@@ -121,7 +121,7 @@ def build(args: argparse.Namespace) -> None:
         p("검토하는 기술사양 10개", "h2"),
         p("정격용량 · 고압측 전압 · 저압측 전압 · 주파수 · 상수 · 결선 그룹 · "
           "냉각 방식 · 팬 보조전원 전압 · 탭절환기 방식 · 옥내형/옥외형"),
-        p("제출 자료  |  2026년 10월 20일\n"
+        p("제출 자료  |  2026년 10월 21일\n"
           "https://github.com/seogdo/transformer-spec-review", "small"),
         PageBreak(),
         p("01  구현 구조", "small"),
@@ -163,14 +163,15 @@ def build(args: argparse.Namespace) -> None:
         grid([
             ["시험", "확인 결과"],
             ["Python 자동 검사", f"{args.python_tests}개 통과. 처리 규칙·오류 처리·보고서의 저장 결과 보존 등을 검사했습니다."],
-            ["화면 모의 검사", f"기존 근거 12개, 복구 32개, 보고서 {args.report_ui_tests}개 통과. 실제 브라우저 시험과는 별도입니다."],
+            ["화면 모의 검사", f"기존 근거 12개, 복구 39개, 보고서 {args.report_ui_tests}개 통과. 실제 브라우저 시험과는 별도입니다."],
             ["V01 실제 AI", "21개 추출값이 코드의 원문 대조를 통과했습니다. 항목 판정은 9개 일치·1개 불일치였습니다."],
             ["V02 실제 화면", args.v02],
             ["V03 실제 화면", args.v03],
             ["회의용 보고서", args.print_check],
         ], [100, WIDTH - 100]),
         p("결과 해석", "h2"),
-        p("모든 시연 문서는 직접 구성한 가상 개발 자료입니다. 자동 검사 개수는 모델 정확도가 "
+        p("이번 자동·화면 모의 재검증은 실제 모델을 추가 호출하지 않았습니다. "
+          "모든 시연 문서는 직접 구성한 가상 개발 자료입니다. 자동 검사 개수는 모델 정확도가 "
           "아니며, 이 결과를 실제 회사 문서의 정확도나 시간 절감률로 해석하지 않습니다."),
         p("현재 제한과 후속 과제", "h2"),
         p("지정 메타데이터와 가상 자료 선언이 있는 텍스트 PDF 3종을 지원합니다. "
@@ -204,16 +205,16 @@ def build(args: argparse.Namespace) -> None:
           "아래는 현재 저장소에서 직접 읽은 실제 코드이며 전체 함수 중 핵심 부분입니다. "
           "가독성을 위해 공통 들여쓰기만 제거했습니다."),
         p("키워드 점수와 원문 위치를 보존하는 검색", "h2"),
-        p("src/handoff_review/extraction_agent.py  311-322행", "small"),
-        code_excerpt("src/handoff_review/extraction_agent.py", 311, 322),
+        p("src/handoff_review/extraction_agent.py  _search_documents 314-325행", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 314, 325),
         Spacer(1, 8),
         p("처리: 항목 별칭으로 찾은 원문 후보에 검색어 포함 점수를 부여하고, "
           "점수·페이지·원문 위치 순으로 정렬했습니다. 검색 요청별 상위 2개를 문자 예산 안에서 반환합니다.\n"
           "출력: 문서 ID, 항목, 페이지, 원문, 청크 ID입니다. 검색 실패는 정답이 없다는 뜻이 아니므로 "
           "미확정 항목을 임의 값으로 채우지 않습니다.", "small"),
         p("값과 단위가 인용문에도 존재하는지 검증", "h2"),
-        p("src/handoff_review/extraction_agent.py  534-541행", "small"),
-        code_excerpt("src/handoff_review/extraction_agent.py", 534, 541),
+        p("src/handoff_review/extraction_agent.py  _validate_proposal 544-551행", "small"),
+        code_excerpt("src/handoff_review/extraction_agent.py", 544, 551),
         Spacer(1, 8),
         p("입력: AI가 제안한 값·단위·인용문과 원문에서 읽은 토큰입니다. 숫자 항목은 "
           "추출 단계에서 단위를 바꿔 제안하지 못하도록 했습니다.\n"

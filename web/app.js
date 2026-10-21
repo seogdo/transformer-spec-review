@@ -569,6 +569,37 @@ function acceptReview(review) {
   remember(STORAGE.review, review.review_id); remember(STORAGE.upload, review.upload_id);
   renderReview(); steps(3);
 }
+function restoreReviewPolicy(review) {
+  // New uploads may default to approved amendments. A restored review must
+  // instead use its saved selection, including an intentional empty list.
+  // Do not salvage only valid IDs from a malformed policy: that would invent
+  // a different selection while displaying the unchanged saved result.
+  const inputs = [...$("amendment-options").querySelectorAll("input")];
+  for (const input of inputs) input.checked = false;
+  $("policy-confirmed").checked = false;
+  const documents = Array.isArray(state.upload?.documents) ? state.upload.documents : [];
+  const base = documents.filter((doc) => doc.role === "customer_spec");
+  const handoff = documents.filter((doc) => doc.role === "handoff");
+  const amendments = documents.filter((doc) => doc.role === "amendment");
+  const approved = new Set(amendments.filter((doc) => doc.status === "approved").map((doc) => doc.id));
+  const policy = review?.policy;
+  const selected = policy?.approved_amendment_ids;
+  const valid = state.upload?.upload_id === review?.upload_id
+    && policy && typeof policy === "object" && !Array.isArray(policy)
+    && base.length === 1 && handoff.length === 1
+    && policy.base_id === base[0].id && policy.handoff_id === handoff[0].id
+    && amendments.length === new Set(amendments.map((doc) => doc.id)).size
+    && Array.isArray(selected) && selected.length <= 8
+    && selected.every((id) => typeof id === "string" && approved.has(id))
+    && new Set(selected).size === selected.length;
+  if (valid) {
+    const chosen = new Set(selected);
+    for (const input of inputs) input.checked = input.dataset.approved === "true" && chosen.has(input.value);
+  }
+  controls();
+  return valid ? "저장된 검토 기준대로 변경서 선택을 복원했습니다. 승인 적용 확인은 다시 필요합니다."
+    : "저장된 적용 기준을 현재 문서와 대조할 수 없어 변경서 선택을 모두 해제했습니다. 원문과 적용할 변경 문서를 직접 확인한 뒤 다시 검토하세요. 저장된 결과는 변경하지 않았습니다.";
+}
 function displayValue(value, missing) {
   if (!value || value.value === null || value.value === undefined) return missing ? "기재 없음" : "—";
   return `${String(value.value)} ${value.unit || ""}`.trim();
@@ -829,6 +860,7 @@ async function restoreState() {
       const review = await api(`/api/reviews/${encodeURIComponent(reviewId)}`, {timeout: 30000});
       if (state.upload && review.upload_id !== state.upload.upload_id) throw new Error("저장된 문서와 검토 기록이 일치하지 않습니다.");
       acceptReview(review);
+      notes.push(restoreReviewPolicy(review));
       notes.push("이전 검토 결과를 복원했습니다. 저장 전 담당자 검토 확인은 다시 필요합니다.");
     } catch (error) { notes.push(`이전 검토를 복원하지 못했습니다. ${error.message}`); }
   }

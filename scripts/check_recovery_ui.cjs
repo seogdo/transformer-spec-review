@@ -19,6 +19,7 @@ const JOB = "c".repeat(32);
 const STORED_KEY = "d".repeat(32);
 const STORAGE = {
   upload: "handoff-review:upload_id",
+  review: "handoff-review:review_id",
   job: "handoff-review:job_id",
   request: "handoff-review:extraction_request",
 };
@@ -134,7 +135,7 @@ function harness({stored = new Map(), disabledStorage = false, rejectRequestWrit
     },
     clearTimeout: (timer) => { if (typeof timer !== "symbol") clearTimeout(timer); },
     fetch: async (url, options) => {
-      const call = {path: new URL(url).pathname, method: options.method || "GET", headers: options.headers || {}};
+      const call = {path: new URL(url).pathname, method: options.method || "GET", headers: options.headers || {}, body: options.body};
       calls.push(call);
       const next = queue.shift();
       assert.ok(next, `Unexpected mocked fetch: ${call.method} ${call.path}`);
@@ -194,7 +195,121 @@ function pendingStorage({job = false, request = true, legacyJob = false} = {}) {
   return stored;
 }
 
+const REVIEW = "e".repeat(32);
+function savedReviewFixture(upload, selected = []) {
+  const fields = ["rated_power", "hv_voltage", "lv_voltage", "frequency", "phases",
+    "vector_group", "cooling_type", "fan_supply_voltage", "tap_changer_type", "installation_type"];
+  return {review_id: REVIEW, upload_id: upload.upload_id,
+    customer_check: copy(upload.customer_check),
+    policy: {base_id: "DOC-0", handoff_id: "DOC-2", approved_amendment_ids: selected},
+    results: fields.map((field) => ({field, status: "NEEDS_REVIEW", expected: null, actual: null,
+      reason: "가상 복원 검사", sources: []})),
+    summary: {MATCH: 0, MISMATCH: 0, MISSING: 0, NEEDS_REVIEW: fields.length},
+    warnings: [], limitations: [],
+  };
+}
+async function restoreReviewFixture(upload, review) {
+  const h = harness({stored: new Map([[STORAGE.upload, upload.upload_id], [STORAGE.review, review.review_id]])});
+  h.respond("GET", `/api/uploads/${upload.upload_id}`, upload);
+  h.respond("GET", `/api/reviews/${review.review_id}`, review);
+  await h.run("restoreState()");
+  assert.deepEqual(h.read("state.review"), review, "Policy restoration must not rewrite a saved review");
+  assert.equal(h.nodes.get("policy-confirmed").checked, false);
+  assert.ok(h.calls.every((call) => call.method === "GET"), "Restore must not submit a new review");
+  return h;
+}
+function selectedAmendments(h) {
+  return h.nodes.get("amendment-options").querySelectorAll("input:checked").map((input) => input.value);
+}
+async function expectReviewSubmission(h, review, selected) {
+  // Confirmation is still an explicit user action, not restored from disk.
+  h.nodes.get("policy-confirmed").checked = true;
+  h.respond("POST", "/api/reviews", review, {inspect: (call) => {
+    assert.deepEqual(JSON.parse(call.body).approved_amendment_ids, selected);
+  }});
+  await h.run("runReview()");
+}
+
 async function main() {
+  await test("restored empty amendment selection stays empty on explicit re-review", async () => {
+    const upload = uploadFixture(UPLOAD, false), review = savedReviewFixture(upload, []);
+    const h = await restoreReviewFixture(upload, review);
+    assert.deepEqual(selectedAmendments(h), []);
+    assert.match(h.nodes.get("restore-note").textContent, /검토 기준대로 변경서 선택을 복원/);
+    await h.run("runReview()");
+    assert.equal(h.calls.length, 2, "An unconfirmed restored policy must not be submitted");
+    await expectReviewSubmission(h, review, []);
+    h.finish();
+  });
+  await test("restored partial selection is not broadened to every approved amendment", async () => {
+    // The current file uploader provides one amendment; this exercises the
+    // saved-policy subset logic without treating extra files as supported UI.
+    const upload = uploadFixture(UPLOAD, false);
+    upload.documents.push({...upload.documents[1], id: "DOC-3"});
+    const review = savedReviewFixture(upload, ["DOC-3"]);
+    const h = await restoreReviewFixture(upload, review);
+    assert.deepEqual(selectedAmendments(h), ["DOC-3"]);
+    await expectReviewSubmission(h, review, ["DOC-3"]);
+    h.finish();
+  });
+  await test("restored complete selection remains selected but requires fresh confirmation", async () => {
+    const upload = uploadFixture(UPLOAD, false), review = savedReviewFixture(upload, ["DOC-1"]);
+    const h = await restoreReviewFixture(upload, review);
+    assert.deepEqual(selectedAmendments(h), ["DOC-1"]);
+    assert.equal(h.nodes.get("review-button").disabled, true);
+    await expectReviewSubmission(h, review, ["DOC-1"]);
+    h.finish();
+  });
+  await test("missing and malformed saved policies clear defaults with a visible warning", async () => {
+    const upload = uploadFixture(UPLOAD, false);
+    const good = savedReviewFixture(upload).policy;
+    for (const invalid of [undefined, null, [], "invalid", {},
+                          {...good, approved_amendment_ids: null},
+                          {...good, approved_amendment_ids: "DOC-1"},
+                          {...good, approved_amendment_ids: [null]},
+                          {...good, approved_amendment_ids: ["DOC-1", "DOC-1"]},
+                          {...good, approved_amendment_ids: ["DOC-1", "UNKNOWN"]},
+                          {...good, base_id: "OTHER-SPEC"}, {...good, handoff_id: "OTHER-HANDOFF"}]) {
+      const review = savedReviewFixture(upload, ["DOC-1"]);
+      if (invalid === undefined) delete review.policy; else review.policy = invalid;
+      const h = await restoreReviewFixture(upload, review);
+      assert.deepEqual(selectedAmendments(h), []);
+      assert.match(h.nodes.get("restore-note").textContent, /변경서 선택을 모두 해제/);
+      assert.equal(h.nodes.get("review-button").disabled, true);
+      h.finish();
+    }
+  });
+  await test("a saved unapproved amendment cannot become checked or enabled", async () => {
+    const upload = uploadFixture(UPLOAD, false);
+    upload.documents[1].status = "draft";
+    const review = savedReviewFixture(upload, ["DOC-1"]);
+    const h = await restoreReviewFixture(upload, review);
+    assert.deepEqual(selectedAmendments(h), []);
+    assert.equal(h.nodes.get("amendment-options").querySelectorAll("input")[0].disabled, true);
+    assert.match(h.nodes.get("restore-note").textContent, /변경서 선택을 모두 해제/);
+    h.finish();
+  });
+  await test("manual amendment changes after restore clear the old review and use the new selection", async () => {
+    const upload = uploadFixture(UPLOAD, false), review = savedReviewFixture(upload, []);
+    const h = await restoreReviewFixture(upload, review);
+    const input = h.nodes.get("amendment-options").querySelectorAll("input")[0];
+    h.nodes.get("policy-confirmed").checked = true;
+    input.checked = true; input.events.change();
+    assert.equal(h.run("state.review"), null);
+    assert.equal(h.nodes.get("policy-confirmed").checked, false);
+    assert.equal(h.stored.has(STORAGE.review), false);
+    await expectReviewSubmission(h, {...review, policy: {...review.policy, approved_amendment_ids: ["DOC-1"]}}, ["DOC-1"]);
+    h.finish();
+  });
+  await test("new upload defaults are unchanged after restoring an empty saved selection", async () => {
+    const upload = uploadFixture(UPLOAD, false), review = savedReviewFixture(upload, []);
+    const h = await restoreReviewFixture(upload, review);
+    h.seed(uploadFixture(DERIVED, false));
+    assert.deepEqual(selectedAmendments(h), ["DOC-1"]);
+    assert.equal(h.run("state.review"), null);
+    assert.equal(h.nodes.get("policy-confirmed").checked, false);
+    h.finish();
+  });
   await test("HTTP error keeps its status and server detail", async () => {
     const h = harness();
     h.respond("GET", jobPath, {detail: "기록 없음"}, {status: 404});

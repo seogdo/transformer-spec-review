@@ -53,12 +53,15 @@ _CONDITIONAL_CONNECTOR = re.compile(r"경우|때|시에만|시에는|조건\s*[:
 _NUMERIC_BOUND = re.compile(r"\d(?:[\d.,\sA-Za-z%℃°]*)?(?:이상|이하|초과|미만)|[<>]=?\s*\d|±\s*\d", re.I)
 _RANGE = re.compile(r"\d\s*(?:~|〜|–|—|/|\s-\s|-)\s*\d|또는|혹은|\b(?:or|between|range)\b", re.I)
 _NUMERIC_RANGE = re.compile(_NUMBER + r"\s*(?:[A-Za-z%℃°]+)?\s*(?:~|〜|–|—|/|-|또는|\bor\b)\s*" + _NUMBER, re.I)
-_LOCAL_NEGATION = re.compile(r"아님|아니(?:다|며|고|므로|라)|금지|제외|불가|미사용|미적용|비적용|(?:적용|사용)\s*안|(?:사용|적용|채택)\s*(?:하지|하지는)\s*않", re.I)
+_LOCAL_NEGATION = re.compile(r"아님|아닙\s*니다|아니(?:다|며|고|므로|라)|금지|제외|불가|미사용|미적용|비적용|(?:적용|사용)\s*안|(?:사용|적용|채택)\s*(?:하지|하지는)\s*않", re.I)
 _GLOBAL_NEGATION = re.compile(r"(?:적용|사용|채택)\s*(?:하지|하지는)\s*않|(?:적용|사용)\s*금지|미적용|미사용|비적용", re.I)
 _EXAMPLE_CONTEXT = re.compile(r"참고\s*(?:예시|값|수치)|예시|예제|가령|예를\s*들|\bexample\b|e\.g\.", re.I)
 _VALUE_REPLACEMENT = re.compile(_NUMBER + r"\s*[A-Za-z%℃°]+\s*(?:로|으로)?\s*(?:변경|대체|수정|정정|전환)", re.I)
 _TABLE_ROW = re.compile(r"^[A-Z]-\d+$")
-_UNSET_ENUM = re.compile(r"미\s*확정|미\s*정|협의|예정|추후|잠정|거부|보류|택일|검토\s*중|확정\s*전|\b(?:TBD|TBC|pending|unconfirmed)\b", re.I)
+_UNSET_VALUE = re.compile(r"미\s*확정|미\s*정|협의|예정|추후|잠정|거부|보류|택일|검토\s*중|확정\s*전|\b(?:TBD|TBC|pending|unconfirmed)\b", re.I)
+# Preserve the strict enum guard above. Other fields may explicitly record a
+# completed consultation; a following pending qualifier still matches on its own.
+_PENDING_VALUE = re.compile(r"미\s*확정|미\s*정|협의(?!\s*완료\s*(?:[)\].,;。；]|$))|예정|추후|잠정|거부|보류|택일|검토\s*중|확정\s*전|\b(?:TBD|TBC|pending|unconfirmed)\b", re.I)
 _OTHER_EQUIPMENT = re.compile(r"부속\s*(?:함|설비|기기)|보조\s*(?:함|설비|기기)|제어\s*(?:반|함)|단자\s*함|접속\s*함|배전\s*반|\b(?:cabinet|enclosure|accessory)\b", re.I)
 _INSTALLATION_CONDITION = re.compile(r"(?:설치|옥내|옥외|실내|실외)\s*시|(?:인|일)\s*경우|(?:에서|일|인)\s*때", re.I)
 
@@ -391,7 +394,7 @@ def _scoped_enum_ambiguity(field: str, item: dict[str, Any], occurrence: dict[st
     if field not in _SCOPED_ENUM_FIELDS:
         return False
     block = occurrence["text"]
-    if _OTHER_EQUIPMENT.search(block) or _UNSET_ENUM.search(block) or _INSTALLATION_CONDITION.search(block):
+    if _OTHER_EQUIPMENT.search(block) or _UNSET_VALUE.search(block) or _INSTALLATION_CONDITION.search(block):
         return True
     label = _ALIASES[field].search(block)
     if label is None:
@@ -412,7 +415,7 @@ def _scoped_enum_ambiguity(field: str, item: dict[str, Any], occurrence: dict[st
     for line in following[:2]:
         if _TABLE_ROW.fullmatch(line) or any(pattern.search(line) for pattern in _ALIASES.values()):
             break
-        if (_UNSET_ENUM.search(line) or _OTHER_EQUIPMENT.search(line)
+        if (_UNSET_VALUE.search(line) or _OTHER_EQUIPMENT.search(line)
                 or _INSTALLATION_CONDITION.search(line) or _measurement_tokens(field, line)):
             return True
     return False
@@ -454,14 +457,21 @@ def _has_conditional_context(item: dict[str, Any], block: str) -> bool:
 
 
 def _has_nonbinding_context(item: dict[str, Any], occurrence: dict[str, Any]) -> bool:
-    """Keep negations, examples and unassigned follow-up changes out of values.
+    """Keep unresolved, negated and illustrative source values unconfirmed.
 
     A short quote cannot turn '380 V 아님' or '참고 예시: 380 V' into a
-    contractual value. Unlabeled subsequent negation/replacement statements
+    contractual value. Likewise, '60 Hz (미확정)' is not an agreed 60 Hz merely
+    because the model omits the suffix from its quote. This applies to numeric
+    and categorical fields alike. Pending markers are local to the full field
+    block and its short following context, not document-wide: another field or
+    an administrative page's future meeting must not erase a confirmed value.
+    Unlabeled subsequent negation/replacement statements
     are conservatively document-wide; assigning their scope needs a human.
     Table row markers terminate adjacency, so A-2/B-1 are not measurements.
     """
-    if _LOCAL_NEGATION.search(occurrence["text"]) or _EXAMPLE_CONTEXT.search(occurrence["text"]):
+    if (_LOCAL_NEGATION.search(occurrence["text"])
+            or _PENDING_VALUE.search(occurrence["text"])
+            or _EXAMPLE_CONTEXT.search(occurrence["text"])):
         return True
     for page in item["pages"]:
         if _GLOBAL_NEGATION.search(page["text"]) or _VALUE_REPLACEMENT.search(page["text"]):
@@ -477,7 +487,7 @@ def _has_nonbinding_context(item: dict[str, Any], occurrence: dict[str, Any]) ->
         for line in following[:2]:
             if _TABLE_ROW.fullmatch(line) or any(pattern.search(line) for pattern in _ALIASES.values()):
                 break
-            if _LOCAL_NEGATION.search(line) or _EXAMPLE_CONTEXT.search(line):
+            if _LOCAL_NEGATION.search(line) or _PENDING_VALUE.search(line) or _EXAMPLE_CONTEXT.search(line):
                 return True
             if re.match(r"(?:또는\s*)?" + _NUMBER + r"\s*(?:[A-Za-z%℃°]+|상)", line):
                 return True
@@ -507,7 +517,7 @@ def _validate_proposal(proposal: dict[str, Any], item: dict[str, Any], hits: lis
     if _scoped_enum_ambiguity(field, item, block):
         return "적용 대상·미확정·조건 또는 추가 문구가 있어 단일 방식/설치 구분으로 확정하지 않았습니다."
     if _has_nonbinding_context(item, block):
-        return "부정·제외·예시 또는 별도 변경 문맥이 있어 확정 값으로 사용하지 않았습니다."
+        return "미확정·부정·제외·예시 또는 별도 변경 문맥이 있어 확정 값으로 사용하지 않았습니다."
     if _has_conditional_context(item, block["text"]):
         return "본문의 조건·범위·허용오차를 자동 해석하지 않고 담당자 확인으로 남겼습니다."
     if _RANGE.search(block["text"]):
