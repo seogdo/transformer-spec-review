@@ -1,0 +1,237 @@
+{
+  "schema_version": "r04-public-validation-1",
+  "case_id": "R04",
+  "created_at": "2026-10-22T08:47:45.980072+09:00",
+  "kind": "developer_authored_synthetic_acceptance_not_independent_evaluation",
+  "synthetic_only": true,
+  "manual_answers_passed_to_model": false,
+  "ai_execution": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "execution_mode": "live_request",
+    "external_processing": true,
+    "calls_attempted": 2,
+    "calls_succeeded": 2
+  },
+  "extraction": {
+    "status": "completed",
+    "proposed_fields": 22,
+    "accepted_fields": 22,
+    "method": "openai_tool_rag"
+  },
+  "review_summary": {
+    "MATCH": 8,
+    "MISMATCH": 2,
+    "MISSING": 0,
+    "NEEDS_REVIEW": 0
+  },
+  "results": [
+    {
+      "field": "rated_power",
+      "label": "정격용량",
+      "status": "MATCH",
+      "expected": {
+        "value": "20000",
+        "unit": "kVA",
+        "document_id": "SPEC-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "20000",
+        "unit": "kVA",
+        "document_id": "HANDOFF-R04",
+        "page": 1
+      }
+    },
+    {
+      "field": "hv_voltage",
+      "label": "고압측 정격전압",
+      "status": "MATCH",
+      "expected": {
+        "value": "66000",
+        "unit": "V",
+        "document_id": "SPEC-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "66000",
+        "unit": "V",
+        "document_id": "HANDOFF-R04",
+        "page": 1
+      }
+    },
+    {
+      "field": "lv_voltage",
+      "label": "저압측 정격전압",
+      "status": "MATCH",
+      "expected": {
+        "value": "6600",
+        "unit": "V",
+        "document_id": "SPEC-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "6600",
+        "unit": "V",
+        "document_id": "HANDOFF-R04",
+        "page": 1
+      }
+    },
+    {
+      "field": "frequency",
+      "label": "정격주파수",
+      "status": "MATCH",
+      "expected": {
+        "value": "60",
+        "unit": "Hz",
+        "document_id": "SPEC-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "60",
+        "unit": "Hz",
+        "document_id": "HANDOFF-R04",
+        "page": 1
+      }
+    },
+    {
+      "field": "phases",
+      "label": "상수",
+      "status": "MATCH",
+      "expected": {
+        "value": "3",
+        "unit": "count",
+        "document_id": "SPEC-R04",
+        "page": 2
+      },
+      "actual": {
+        "value": "3",
+        "unit": "count",
+        "document_id": "HANDOFF-R04",
+        "page": 2
+      }
+    },
+    {
+      "field": "vector_group",
+      "label": "결선 그룹",
+      "status": "MISMATCH",
+      "expected": {
+        "value": "Dyn11",
+        "unit": "",
+        "document_id": "AMD-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "Dyn1",
+        "unit": "",
+        "document_id": "HANDOFF-R04",
+        "page": 2
+      }
+    },
+    {
+      "field": "cooling_type",
+      "label": "냉각 방식",
+      "status": "MISMATCH",
+      "expected": {
+        "value": "OFAF",
+        "unit": "",
+        "document_id": "AMD-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "ONAF",
+        "unit": "",
+        "document_id": "HANDOFF-R04",
+        "page": 2
+      }
+    },
+    {
+      "field": "fan_supply_voltage",
+      "label": "팬 보조전원 정격전압",
+      "status": "MATCH",
+      "expected": {
+        "value": "380",
+        "unit": "V",
+        "document_id": "SPEC-R04",
+        "page": 2
+      },
+      "actual": {
+        "value": "380",
+        "unit": "V",
+        "document_id": "HANDOFF-R04",
+        "page": 2
+      }
+    },
+    {
+      "field": "tap_changer_type",
+      "label": "탭절환기 방식",
+      "status": "MATCH",
+      "expected": {
+        "value": "OLTC",
+        "unit": "",
+        "document_id": "SPEC-R04",
+        "page": 1
+      },
+      "actual": {
+        "value": "OLTC",
+        "unit": "",
+        "document_id": "HANDOFF-R04",
+        "page": 1
+      }
+    },
+    {
+      "field": "installation_type",
+      "label": "설치 구분",
+      "status": "MATCH",
+      "expected": {
+        "value": "옥외형",
+        "unit": "",
+        "document_id": "SPEC-R04",
+        "page": 2
+      },
+      "actual": {
+        "value": "옥외형",
+        "unit": "",
+        "document_id": "HANDOFF-R04",
+        "page": 2
+      }
+    }
+  ],
+  "llm_used_for_verdict": false,
+  "elapsed_seconds_single_observation": 13.176,
+  "timing_scope": "한 번의 실행 관측이며 성능 비교·시간 절감률·처리시간 보장을 뜻하지 않습니다.",
+  "source_code_unchanged": true,
+  "verified_source_file_count": 13,
+  "source_code_sha256": {
+    "src/handoff_review/__init__.py": "5848576165ebbb6752eb24c681820734f360352b61e3475070733d6343a8a202",
+    "src/handoff_review/__main__.py": "c8eb854d63888175156cce457236c7a2aad665f7acfdd51cfd02791f57316300",
+    "src/handoff_review/contracts.py": "b9f4a39d5124ba05e76867dbbc85c9986af7711743149063aa921fb761458654",
+    "src/handoff_review/customers.py": "38f62a883fb416aec361a1946e293f250b22604ba6e81908304832476df25e37",
+    "src/handoff_review/explanation.py": "c949e71403d254d4c8fd4ddc164e42e5c32409652af04e2c7c4a6d78bac13b22",
+    "src/handoff_review/extraction_agent.py": "83940ef30d02dcbe3a2f82fcf1307a1d00e73b9d297baf1af2099cc6b71cc9ee",
+    "src/handoff_review/llm_backend.py": "7d34c1564fb90f374c97a5e00dc6d3d444a8ed3867f53d4f650f2ac4aec61d10",
+    "src/handoff_review/pdf_ingest.py": "664f5cf165b27276128b8bf849702e19773c999de9290d91f0ee2b5028dd23f7",
+    "src/handoff_review/pdf_worker.py": "f62fce071c58e804d9757a8a8541a5a70b20ce69d2a8cbbbddecf9b4920e9575",
+    "src/handoff_review/report.py": "cac9ba0ae3e959200421381a6d845b61c60796aca13d37f9dcf20347f223fc71",
+    "src/handoff_review/review.py": "ea05c7cc3926a1a02537b31533a4d183b8e50ac30e46d80cfdf79d99abf1b1ed",
+    "src/handoff_review/text_pdf.py": "f19cbcba77d51df0fdd5e33102a9ab03251a822b4c7a9fba33e49ae10a5b120e",
+    "src/handoff_review/web_app.py": "b207c4504335647ae872813c08ecf7555fe21c8bd82a234055b6f9dde42b51e0"
+  },
+  "artifact_sha256": {
+    "output/pdf/revised/R04/01_customer_spec.pdf": "0916ba5d4b5635c2cff0e00e497c2b6e8cf85e5e20cdc86fe193c812768d478b",
+    "output/pdf/revised/R04/02_amendment.pdf": "70b7471ae53cd3b8bdd017f5ee6e690689ed9dea4e6b500b8f8bdfdcf5671ea6",
+    "output/pdf/revised/R04/03_handoff.pdf": "c8ae1024e2a03c7e4075be806d7959df4403d999c79e3964be9f027e3ae17198",
+    "output/openai-r04-result.png": "a24eae63587b5e47317463af77c45c2ed07de30bc6880283ffb197f31e1369ae",
+    "output/openai-r04-rows.png": "a2ab6b67d3d2bccffd94bf9e7603f2a8f7ee65f9f4a6ca7471abf8dcd8ef9bc0",
+    "output/openai-r04-vector-evidence.png": "3a317d8494ab9858dd149f2e1cf942f43c5d62688ff1d22dd86f0c5767cde099",
+    "output/openai-r04-cooling-evidence.png": "393ef3cd124889c445442963aba01c14757e7e133d23cba909260020b78e0d24"
+  },
+  "limitations": [
+    "개발자가 작성한 가상 문서 1세트의 수용시험입니다. 독립 평가 자료의 AI 정확도로 환산하지 않습니다.",
+    "2/2는 API 응답 완료, 22/22는 원문 검증 통과, 8일치·2불일치는 최종 10항목 비교 결과입니다.",
+    "최종 판정은 기존 코드가 수행합니다. 설계 적합성·병렬운전 가능 여부·냉각 성능·허용 용량을 승인하지 않습니다.",
+    "승인 정보와 고객사 표기는 실습용 메타데이터이며 실제 승인 권한·문서 진위·거래 관계의 검증이 아닙니다.",
+    "기존 V01~V03 실행 기록은 변경하지 않았습니다."
+  ],
+  "privacy": "비밀키·로컬 경로·요청 식별자·전체 원문·모델 원응답·설정 서명은 이 요약에서 제외했습니다."
+}
